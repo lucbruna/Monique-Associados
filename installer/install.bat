@@ -6,7 +6,7 @@ echo  ════════════════════════�
 echo  ⚖️  MONIQUE ADVOGADOS - Instalador Profissional
 echo  ═══════════════════════════════════════════════════════════
 echo.
-echo  Sistema de Gestão Jurídica v1.0.0
+echo  Sistema de Gestão Jurídica v1.0.1
 echo  Desenvolvido para escritórios de advocacia
 echo.
 echo  ═══════════════════════════════════════════════════════════

@@ -3,13 +3,13 @@
   ║                                                               ║
   ║     ⚖️  MONIQUE ADVOGADOS - Compilador Profissional           ║
   ║     Converte scripts PowerShell em executáveis .exe           ║
-  ║     v1.0.0                                                    ║
+  ║     v1.0.1                                                    ║
   ║                                                               ║
   ╚═══════════════════════════════════════════════════════════════╝
 #>
 
 $AppName = "Monique Advogados"
-$AppVersion = "1.0.0"
+$AppVersion = "1.0.1"
 $AppPublisher = "Monique Advogados"
 $ProjectRoot = Split-Path -Parent $PSScriptRoot
 if ([string]::IsNullOrEmpty($ProjectRoot)) { $ProjectRoot = Get-Location }
@@ -18,9 +18,9 @@ $OutputDir = "$ProjectRoot\dist"
 $IconFile = "$InstallerDir\monique.ico"
 
 $scripts = @(
-    @{Input="$InstallerDir\Instalador.ps1"; Output="$ProjectRoot\Instalador.exe"; Description="Instalador do Sistema"; NoConsole=$true},
-    @{Input="$InstallerDir\run.ps1"; Output="$ProjectRoot\run.exe"; Description="Inicializador do Sistema"; NoConsole=$false},
-    @{Input="$ProjectRoot\installer\stop.bat"; Output="$ProjectRoot\stop.exe"; Description="Parar Sistema"; NoConsole=$false}
+    @{Input="$InstallerDir\Instalador.ps1"; Output="$ProjectRoot\Instalador.exe"; Description="Instalador do Sistema"; NoConsole=$false; RequireAdmin=$true},
+    @{Input="$InstallerDir\run.ps1"; Output="$ProjectRoot\run.exe"; Description="Inicializador do Sistema"; NoConsole=$false; RequireAdmin=$false},
+    @{Input="$ProjectRoot\installer\stop.ps1"; Output="$ProjectRoot\stop.exe"; Description="Parar Sistema"; NoConsole=$false; RequireAdmin=$false}
 )
 
 function Write-Color {
@@ -101,7 +101,7 @@ foreach ($script in $scripts) {
             Company = $AppPublisher
             Copyright = "2026 $AppPublisher"
             Version = $AppVersion
-            RequireAdmin = if ($script.NoConsole) { $true } else { $false }
+            RequireAdmin = $script.RequireAdmin
             NoConsole = $script.NoConsole
             ErrorAction = "Stop"
         }

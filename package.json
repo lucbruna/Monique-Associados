@@ -1,6 +1,6 @@
 {
   "name": "monique-advogados",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Sistema de Gestão Jurídica - Monique Advogados",
   "private": true,
   "scripts": {

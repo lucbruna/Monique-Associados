@@ -2,7 +2,7 @@
 ; Professional Windows Installer for Law Firm Management System
 
 #define MyAppName "Monique Advogados"
-#define MyAppVersion "1.0.0"
+#define MyAppVersion "1.0.1"
 #define MyAppPublisher "Monique Advogados"
 #define MyAppURL "https://moniqueadvogados.com"
 #define MyAppExeName "run.exe"

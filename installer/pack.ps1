@@ -1,5 +1,5 @@
 ﻿$AppName = "Monique Advogados"
-$AppVersion = "1.0.0"
+$AppVersion = "1.0.1"
 $ProjectRoot = Split-Path -Parent $PSScriptRoot
 $DistDir = "$ProjectRoot\dist"
 $PackageBase = "MoniqueAdvogados_$AppVersion"

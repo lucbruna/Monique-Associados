@@ -2,13 +2,25 @@
   ╔═══════════════════════════════════════════════════════════════╗
   ║                                                               ║
   ║     ⚖️  MONIQUE ADVOGADOS - Inicializador do Sistema          ║
-  ║     v1.0.0                                                    ║
+  ║     v1.0.1                                                    ║
   ║                                                               ║
   ╚═══════════════════════════════════════════════════════════════╝
 #>
 
 $AppName = "⚖️ Monique Advogados"
-$InstallDir = Split-Path -Parent $PSScriptRoot
+$InstallDir = $null
+if (-not [string]::IsNullOrEmpty($PSScriptRoot)) {
+    $parent = Split-Path -Parent $PSScriptRoot
+    if (-not [string]::IsNullOrEmpty($parent)) { $InstallDir = $parent }
+}
+if ([string]::IsNullOrEmpty($InstallDir)) {
+    # Executavel compilado com ps2exe: $PSScriptRoot fica vazio.
+    # O exe fica ao lado de backend\ e frontend\ no diretorio de instalacao.
+    try {
+        $exeDir = Split-Path -Parent ([System.Diagnostics.Process]::GetCurrentProcess().MainModule.FileName)
+        if (Test-Path "$exeDir\backend") { $InstallDir = $exeDir }
+    } catch { }
+}
 if ([string]::IsNullOrEmpty($InstallDir)) { $InstallDir = Get-Location }
 $BackendDir = "$InstallDir\backend"
 $FrontendDir = "$InstallDir\frontend"

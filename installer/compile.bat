@@ -30,7 +30,7 @@ echo.
 
 :: Compilar instalador
 echo  [2/3] Compilando instalador.exe...
-powershell -Command "& { Import-Module ps2exe; $icon = '$(Get-ChildItem -Path . -Filter *.ico -Recurse | Select-Object -First 1).FullName'; if ($icon) { ps2exe -InputFile 'Instalador.ps1' -OutputFile '..\Instalador.exe' -Title 'Monique Advogados - Instalador' -Description 'Sistema de Gestão Jurídica' -IconFile $icon -Version '1.0.0' -Company 'Monique Advogados' -Copyright '2026 Monique Advogados' -RequireAdministrator } else { ps2exe -InputFile 'Instalador.ps1' -OutputFile '..\Instalador.exe' -Title 'Monique Advogados - Instalador' -Description 'Sistema de Gestão Jurídica' -Version '1.0.0' -Company 'Monique Advogados' -Copyright '2026 Monique Advogados' -RequireAdministrator } }"
+powershell -Command "& { Import-Module ps2exe; $icon = '$(Get-ChildItem -Path . -Filter *.ico -Recurse | Select-Object -First 1).FullName'; if ($icon) { ps2exe -InputFile 'Instalador.ps1' -OutputFile '..\Instalador.exe' -Title 'Monique Advogados - Instalador' -Description 'Sistema de Gestão Jurídica' -IconFile $icon -Version '1.0.1' -Company 'Monique Advogados' -Copyright '2026 Monique Advogados' -RequireAdministrator } else { ps2exe -InputFile 'Instalador.ps1' -OutputFile '..\Instalador.exe' -Title 'Monique Advogados - Instalador' -Description 'Sistema de Gestão Jurídica' -Version '1.0.1' -Company 'Monique Advogados' -Copyright '2026 Monique Advogados' -RequireAdministrator } }"
 
 if exist "..\Instalador.exe" (
     echo  ✅ Instalador compilado!

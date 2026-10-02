@@ -3,14 +3,14 @@
   ╔═══════════════════════════════════════════════════════════════╗
   ║                                                               ║
   ║     ⚖️  MONIQUE ADVOGADOS - Instalador Profissional           ║
-  ║     Sistema de Gestão Jurídica v1.0.0                         ║
+  ║     Sistema de Gestão Jurídica v1.0.1                         ║
   ║     Copyright (c) 2026 Monique Advogados                      ║
   ║                                                               ║
   ╚═══════════════════════════════════════════════════════════════╝
 #>
 
 $AppName = "Monique Advogados"
-$AppVersion = "1.0.0"
+$AppVersion = "1.0.1"
 $AppPublisher = "Monique Advogados"
 $InstallDir = "$env:LOCALAPPDATA\MoniqueAdvogados"
 $StartMenuDir = "$env:ProgramData\Microsoft\Windows\Start Menu\Programs\Monique Advogados"
@@ -148,7 +148,19 @@ Write-Color ""
 # ─── PASSO 3: Copiar arquivos ───
 Show-Progress -Step 3 -Total 7 -Message "Copiando arquivos do sistema..."
 
-$SourceDir = Split-Path -Parent $PSScriptRoot
+$SourceDir = $null
+if (-not [string]::IsNullOrEmpty($PSScriptRoot)) {
+    $parent = Split-Path -Parent $PSScriptRoot
+    if (-not [string]::IsNullOrEmpty($parent)) { $SourceDir = $parent }
+}
+if ([string]::IsNullOrEmpty($SourceDir)) {
+    # Executavel compilado com ps2exe: $PSScriptRoot fica vazio.
+    # O exe fica ao lado de backend\ e frontend\ no pacote.
+    try {
+        $exeDir = Split-Path -Parent ([System.Diagnostics.Process]::GetCurrentProcess().MainModule.FileName)
+        if (Test-Path "$exeDir\backend") { $SourceDir = $exeDir }
+    } catch { }
+}
 if ([string]::IsNullOrEmpty($SourceDir)) { $SourceDir = Get-Location }
 
 Write-Color "    📦 Origem: $SourceDir" "Gray"
@@ -176,7 +188,7 @@ foreach ($item in $copyItems) {
     }
 }
 
-# Copiar scripts .bat
+# Copiar scripts .bat e icone
 $batFiles = @("run.bat", "stop.bat")
 foreach ($bat in $batFiles) {
     $batSource = "$SourceDir\installer\$bat"
@@ -184,6 +196,11 @@ foreach ($bat in $batFiles) {
     if (Test-Path $batSource) {
         Copy-Item -Path $batSource -Destination $InstallDir -Force -ErrorAction SilentlyContinue
     }
+}
+$iconSource = "$SourceDir\installer\monique.ico"
+if (-not (Test-Path $iconSource)) { $iconSource = "$SourceDir\monique.ico" }
+if (Test-Path $iconSource) {
+    Copy-Item -Path $iconSource -Destination $InstallDir -Force
 }
 
 if ($copyErrors -gt 0) {
@@ -297,7 +314,7 @@ try {
     $shortcut.TargetPath = "$InstallDir\run.bat"
     $shortcut.WorkingDirectory = $InstallDir
     $shortcut.Description = "Iniciar ⚖️ Monique Advogados - Sistema de Gestão Jurídica"
-    $shortcut.IconLocation = "$InstallDir\backend\public\favicon.ico,0"
+    $shortcut.IconLocation = "$InstallDir\monique.ico,0"
     $shortcut.Save()
     Write-Color "    ✅ Atalho na Área de Trabalho" "Green"
     
@@ -309,7 +326,7 @@ try {
     $shortcut2.TargetPath = "$InstallDir\run.bat"
     $shortcut2.WorkingDirectory = $InstallDir
     $shortcut2.Description = "Iniciar ⚖️ Monique Advogados"
-    $shortcut2.IconLocation = "$InstallDir\backend\public\favicon.ico,0"
+    $shortcut2.IconLocation = "$InstallDir\monique.ico,0"
     $shortcut2.Save()
     Write-Color "    ✅ Atalho no Menu Iniciar" "Green"
     
@@ -337,7 +354,7 @@ try {
 Write-Color ""
 
 # ─── FINALIZAÇÃO ───
-Set-Location $PSScriptRoot
+try { Set-Location $InstallDir -ErrorAction Stop } catch { }
 
 Clear-Host
 Write-Color ""
@@ -370,6 +387,18 @@ Write-Color ""
 Write-Color "  ⚠️  PARA DESINSTALAR:" "Yellow"
 Write-Color "    • Menu Iniciar > Monique Advogados > Desinstalar" "Yellow"
 Write-Color "    • Ou remova a pasta $InstallDir manualmente" "Yellow"
+Write-Color ""
+Write-Host "  🚀 Deseja iniciar o sistema agora? (S/N): " -NoNewline
+$iniciar = Read-Host
+if ($iniciar -match '^[sS]') {
+    if (Test-Path "$InstallDir\run.bat") {
+        Start-Process -FilePath "$InstallDir\run.bat" -WorkingDirectory $InstallDir
+        Write-Color ""
+        Write-Color "  ✅ Sistema iniciado! Aguarde as janelas de backend e frontend abrirem." "Green"
+    } else {
+        Write-Color "  ⚠️  run.bat não encontrado em $InstallDir" "Yellow"
+    }
+}
 Write-Color ""
 Write-Host "  Pressione ENTER para sair..." -NoNewline
 $null = Read-Host

@@ -73,4 +73,4 @@ MIT License - Uso livre para escritórios de advocacia.
 
 ---
 
-**⚖️ Monique Advogados** - Sistema de Gestão Jurídica v1.0.0
+**⚖️ Monique Advogados** - Sistema de Gestão Jurídica v1.0.1
