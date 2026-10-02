@@ -83,7 +83,7 @@ export const createDeadline = async (req: AuthRequest, res: Response, next: Next
         description,
         dueDate: new Date(dueDate),
         priority,
-        caseId,
+        caseId: caseId || null,
       },
       include: {
         case: true,
@@ -110,7 +110,7 @@ export const createDeadline = async (req: AuthRequest, res: Response, next: Next
 export const updateDeadline = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
     const { id } = req.params;
-    const { title, description, dueDate, priority, isCompleted } = req.body;
+    const { title, description, dueDate, priority, isCompleted, caseId } = req.body;
 
     const existingDeadline = await prisma.deadline.findUnique({ where: { id } });
     if (!existingDeadline) {
@@ -125,6 +125,7 @@ export const updateDeadline = async (req: AuthRequest, res: Response, next: Next
         dueDate: dueDate ? new Date(dueDate) : undefined,
         priority,
         isCompleted,
+        ...(caseId !== undefined && { caseId: caseId || null }),
       },
       include: {
         case: true,

@@ -8,6 +8,8 @@ import {
   ClockIcon,
   CurrencyDollarIcon,
   Cog6ToothIcon,
+  BookOpenIcon,
+  ScaleIcon,
 } from '@heroicons/react/24/outline';
 
 const navigation = [
@@ -16,6 +18,8 @@ const navigation = [
   { name: 'Processos', href: '/cases', icon: BriefcaseIcon },
   { name: 'Agenda', href: '/calendar', icon: CalendarIcon },
   { name: 'Documentos', href: '/documents', icon: DocumentTextIcon },
+  { name: 'Constituição Federal', href: '/constituicao-federal', icon: ScaleIcon },
+  { name: 'Vade-Mécum', href: '/vade-mecum', icon: BookOpenIcon },
   { name: 'Prazos', href: '/deadlines', icon: ClockIcon },
   { name: 'Honorários', href: '/fees', icon: CurrencyDollarIcon },
   { name: 'Configurações', href: '/settings', icon: Cog6ToothIcon },

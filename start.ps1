@@ -25,6 +25,24 @@ function Stop-NodeProcesses {
 # Parar processos existentes
 Stop-NodeProcesses
 
+# Verificar portas especificas
+Write-Host "[CHECK] Verificando portas 3000 e 3001..." -ForegroundColor Cyan
+$portsToCheck = @(3000, 3001)
+foreach ($port in $portsToCheck) {
+    $conn = netstat -ano | Select-String ":$port\s"
+    foreach ($c in $conn) {
+        $parts = $c -split '\s+'
+        $pid = $parts[-1]
+        if ($pid -match '^\d+$' -and $pid -ne 0) {
+            Stop-Process -Id $pid -Force -ErrorAction SilentlyContinue
+            Write-Host "[OK] Processo PID $pid na porta $port finalizado" -ForegroundColor Green
+        }
+    }
+}
+Start-Sleep -Seconds 1
+Write-Host "[OK] Portas liberadas" -ForegroundColor Green
+Write-Host ""
+
 # Verificar PostgreSQL
 Write-Host "[CHECK] Verificando PostgreSQL na porta 5433..." -ForegroundColor Cyan
 if (Test-Port 5433) {

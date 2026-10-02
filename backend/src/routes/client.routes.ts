@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { authenticate, authorize } from '../middleware/auth';
+import { ROLES } from '../utils/permissions';
 import {
   getClients,
   getClient,
@@ -14,8 +15,8 @@ router.use(authenticate);
 
 router.get('/', getClients);
 router.get('/:id', getClient);
-router.post('/', authorize('SOCIO', 'ADVOGADO', 'ADMINISTRATIVO'), createClient);
-router.put('/:id', authorize('SOCIO', 'ADVOGADO', 'ADMINISTRATIVO'), updateClient);
-router.delete('/:id', authorize('SOCIO', 'ADVOGADO'), deleteClient);
+router.post('/', authorize(ROLES.SOCIO, ROLES.ADVOGADO, ROLES.ADMINISTRATIVO, ROLES.SUPER_ADMIN), createClient);
+router.put('/:id', authorize(ROLES.SOCIO, ROLES.ADVOGADO, ROLES.ADMINISTRATIVO, ROLES.SUPER_ADMIN), updateClient);
+router.delete('/:id', authorize(ROLES.SOCIO, ROLES.ADVOGADO, ROLES.SUPER_ADMIN), deleteClient);
 
 export default router;

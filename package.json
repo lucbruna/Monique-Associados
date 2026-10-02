@@ -1,0 +1,19 @@
+{
+  "name": "monique-advogados",
+  "version": "1.0.0",
+  "description": "Sistema de Gestão Jurídica - Monique Advogados",
+  "private": true,
+  "scripts": {
+    "start": "run.bat",
+    "stop": "stop.bat",
+    "install:all": "install.bat",
+    "dev:backend": "cd backend && npm run dev",
+    "dev:frontend": "cd frontend && npm run dev",
+    "dev": "concurrently \"npm run dev:backend\" \"npm run dev:frontend\"",
+    "db:seed": "cd backend && npx prisma db seed",
+    "db:reset": "cd backend && npx prisma migrate reset",
+    "db:studio": "cd backend && npx prisma studio"
+  },
+  "author": "Monique Advogados",
+  "license": "MIT"
+}

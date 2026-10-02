@@ -4,36 +4,113 @@
 
 @layer base {
   body {
-    @apply bg-gray-50 text-gray-900 font-sans antialiased;
+    @apply bg-[#f7f6f3] text-slate-900 font-sans antialiased dark:bg-slate-950 dark:text-slate-100;
+  }
+
+  /* Títulos com serifa display — hierarquia premium */
+  h1, h2, h3 {
+    @apply font-display;
   }
 
   h1, h2, h3, h4, h5, h6 {
-    @apply font-semibold text-dark-900;
+    @apply font-semibold text-slate-900 tracking-tight dark:text-slate-100;
+  }
+
+  h1 {
+    @apply tracking-[0.01em];
+  }
+
+  /* Seleção de texto com toque dourado */
+  ::selection {
+    @apply bg-gold-300/60 text-slate-900 dark:bg-gold-500/40 dark:text-gold-50;
+  }
+
+  /* Scrollbar discreta e elegante */
+  ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    background-color: rgba(15, 23, 42, 0.18);
+    border-radius: 9999px;
+    border: 2px solid transparent;
+    background-clip: content-box;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background-color: rgba(168, 122, 45, 0.55);
+    background-clip: content-box;
+  }
+  /* No escuro o trilho sumiria, então o polegar precisa ganhar contraste */
+  .dark ::-webkit-scrollbar-thumb {
+    background-color: rgba(226, 232, 240, 0.22);
   }
 }
 
 @layer components {
   .btn {
-    @apply px-4 py-2 rounded-lg font-medium transition-all duration-200;
+    @apply inline-flex items-center justify-center gap-2 px-4 py-2 rounded-xl font-medium transition-all duration-200 focus:outline-none focus:ring-4;
   }
 
+  /* Botão primário: ouro refinado com texto escuro (estética luxury) */
   .btn-primary {
-    @apply bg-primary-600 text-white hover:bg-primary-700 focus:ring-4 focus:ring-primary-300;
+    @apply text-[#241a05] font-semibold bg-gradient-to-br from-gold-300 via-gold-400 to-gold-600 hover:from-gold-200 hover:via-gold-300 hover:to-gold-500 focus:ring-gold-300 shadow-glow hover:shadow-glow-gold hover:-translate-y-px active:translate-y-0;
   }
 
   .btn-secondary {
-    @apply bg-gray-200 text-gray-800 hover:bg-gray-300 focus:ring-4 focus:ring-gray-200;
+    @apply bg-slate-200/70 text-slate-800 hover:bg-slate-300/70 focus:ring-slate-200 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700 dark:focus:ring-slate-700;
   }
 
   .btn-danger {
-    @apply bg-red-600 text-white hover:bg-red-700 focus:ring-4 focus:ring-red-300;
+    @apply bg-rose-700 text-white hover:bg-rose-800 focus:ring-rose-300;
   }
 
   .input-field {
-    @apply w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent;
+    @apply w-full px-3.5 py-2.5 bg-white border border-slate-200 rounded-xl text-slate-900 placeholder-slate-400 focus:ring-2 focus:ring-gold-400/50 focus:border-gold-500 transition dark:bg-slate-900 dark:border-slate-700 dark:text-slate-100 dark:placeholder-slate-500;
   }
 
   .card {
-    @apply bg-white rounded-lg shadow-md p-6;
+    @apply bg-white rounded-2xl shadow-card border border-slate-200/60 p-6 transition-all duration-200 hover:shadow-card-hover hover:border-gold-200/70 dark:bg-slate-900 dark:border-slate-700/60 dark:hover:border-gold-700/50;
+  }
+
+  .badge {
+    @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium;
+  }
+
+  /* Letras douradas — efeito foil metálico refinado */
+  .text-gold {
+    background-image: linear-gradient(
+      112deg,
+      #5f4210 0%,
+      #8a6520 28%,
+      #c9a227 46%,
+      #e0bc57 52%,
+      #c9a227 58%,
+      #8a6520 76%,
+      #5f4210 100%
+    );
+    @apply bg-clip-text text-transparent;
+  }
+
+  /* Versão para fundos escuros — brilho champagne */
+  .text-gold-light {
+    background-image: linear-gradient(
+      112deg,
+      #b8860b 0%,
+      #e6c766 25%,
+      #fdf0c0 48%,
+      #fffbe9 52%,
+      #fdf0c0 56%,
+      #e6c766 75%,
+      #b8860b 100%
+    );
+    @apply bg-clip-text text-transparent;
+  }
+
+  /* Filete dourado decorativo sob títulos */
+  .gold-rule {
+    @apply block h-px w-24 bg-gradient-to-r from-gold-500 via-gold-400 to-transparent;
   }
 }

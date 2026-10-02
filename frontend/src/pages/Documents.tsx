@@ -1,4 +1,4 @@
-﻿import { useState } from 'react';
+import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '../lib/axios';
 import { toast } from 'react-hot-toast';
@@ -36,8 +36,8 @@ export default function Documents() {
   const { data: cases } = useQuery({
     queryKey: ['cases'],
     queryFn: async () => {
-      const res = await api.get('/cases');
-      return res.data.data;
+      const res = await api.get('/cases?limit=100');
+      return res.data.data?.cases ?? [];
     },
   });
 
@@ -93,7 +93,7 @@ export default function Documents() {
 
   const handleDownload = (filePath: string, fileName: string) => {
     // Abre o arquivo em uma nova aba
-    const fileUrl = `http://localhost:3001${filePath}`;
+    const fileUrl = filePath;
     window.open(fileUrl, '_blank');
     toast.success(`Abrindo ${fileName}`);
   };
@@ -113,8 +113,8 @@ export default function Documents() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-dark-900">Documentos</h1>
-          <p className="text-gray-600 mt-1">Gestão de documentos e peças processuais</p>
+          <h1 className="text-3xl font-bold text-gold dark:text-gold-light">Documentos</h1>
+          <p className="text-slate-600 dark:text-slate-400 mt-1">Gestão de documentos e peças processuais</p>
         </div>
         <button
           onClick={() => setIsUploadModalOpen(true)}
@@ -128,14 +128,14 @@ export default function Documents() {
       {/* Filtros */}
       <div className="card">
         <div className="flex gap-4 items-center">
-          <label htmlFor="filter-type" className="text-sm font-medium text-gray-700">Filtrar por tipo:</label>
+          <label htmlFor="filter-type" className="text-sm font-medium text-slate-700 dark:text-slate-300">Filtrar por tipo:</label>
           <select
             id="filter-type"
             value={selectedType}
             onChange={(e) => setSelectedType(e.target.value)}
             title="Filtrar documentos por tipo"
             aria-label="Filtrar documentos por tipo"
-            className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+            className="px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
           >
             <option value="">Todos os Tipos</option>
             {Object.entries(typeLabels).map(([key, label]) => (
@@ -145,12 +145,12 @@ export default function Documents() {
           {selectedType && (
             <button
               onClick={() => setSelectedType('')}
-              className="text-sm text-gray-600 hover:text-gray-900"
+              className="text-sm text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100"
             >
               Limpar filtro
             </button>
           )}
-          <div className="ml-auto text-sm text-gray-600">
+          <div className="ml-auto text-sm text-slate-600 dark:text-slate-400">
             Total: {filteredDocuments?.length || 0} documentos
           </div>
         </div>
@@ -170,16 +170,16 @@ export default function Documents() {
                   </div>
                 </div>
                 <div className="flex-1 min-w-0">
-                  <h3 className="text-sm font-semibold text-dark-900 truncate">{doc.title}</h3>
-                  <p className="text-xs text-gray-500 mt-1">{doc.description || 'Sem descrição'}</p>
+                  <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100 truncate">{doc.title}</h3>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">{doc.description || 'Sem descrição'}</p>
                   <div className="mt-2 flex flex-wrap gap-2">
                     <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800">
                       {typeLabels[doc.type]}
                     </span>
-                    <span className="text-xs text-gray-500">{formatFileSize(doc.fileSize)}</span>
+                    <span className="text-xs text-slate-500 dark:text-slate-400">{formatFileSize(doc.fileSize)}</span>
                   </div>
                   {doc.case && (
-                    <p className="text-xs text-gray-500 mt-2">Processo: {doc.case.caseNumber}</p>
+                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-2">Processo: {doc.case.caseNumber}</p>
                   )}
                   <div className="mt-3 flex gap-2">
                     <button
@@ -195,7 +195,7 @@ export default function Documents() {
                       <TrashIcon className="h-4 w-4" /> Excluir
                     </button>
                   </div>
-                  <p className="text-xs text-gray-400 mt-2">
+                  <p className="text-xs text-slate-400 dark:text-slate-500 mt-2">
                     Enviado em {new Date(doc.createdAt).toLocaleDateString('pt-BR')}
                   </p>
                 </div>
@@ -203,8 +203,8 @@ export default function Documents() {
             </div>
           ))
         ) : (
-          <div className="col-span-full text-center py-12 text-gray-500">
-            <DocumentTextIcon className="h-12 w-12 mx-auto mb-4 text-gray-300" />
+          <div className="col-span-full text-center py-12 text-slate-500 dark:text-slate-400">
+            <DocumentTextIcon className="h-12 w-12 mx-auto mb-4 text-slate-300 dark:text-slate-400" />
             <p>Nenhum documento encontrado</p>
             <button
               onClick={() => setIsUploadModalOpen(true)}
@@ -219,15 +219,15 @@ export default function Documents() {
       {/* Modal de Upload */}
       {isUploadModalOpen && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full">
+          <div className="bg-white dark:bg-slate-900 rounded-lg shadow-xl max-w-2xl w-full">
             <div className="p-6">
               <div className="flex justify-between items-center mb-4">
-                <h2 className="text-2xl font-bold text-dark-900">Upload de Documento</h2>
+                <h2 className="text-2xl font-bold text-slate-900 dark:text-slate-100">Upload de Documento</h2>
                 <button
                   onClick={() => setIsUploadModalOpen(false)}
                   title="Fechar"
                   aria-label="Fechar modal de upload"
-                  className="text-gray-500 hover:text-gray-700"
+                  className="text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200"
                 >
                   <XMarkIcon className="h-6 w-6" />
                 </button>
@@ -235,7 +235,7 @@ export default function Documents() {
 
               <form onSubmit={handleUpload} className="space-y-4">
                 <div>
-                  <label htmlFor="doc-title" className="block text-sm font-medium text-gray-700 mb-1">Título *</label>
+                  <label htmlFor="doc-title" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Título *</label>
                   <input
                     id="doc-title"
                     type="text"
@@ -244,12 +244,12 @@ export default function Documents() {
                     placeholder="Digite o título do documento"
                     value={uploadData.title}
                     onChange={(e) => setUploadData({ ...uploadData, title: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                    className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                   />
                 </div>
 
                 <div>
-                  <label htmlFor="doc-description" className="block text-sm font-medium text-gray-700 mb-1">Descrição</label>
+                  <label htmlFor="doc-description" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Descrição</label>
                   <textarea
                     id="doc-description"
                     value={uploadData.description}
@@ -257,13 +257,13 @@ export default function Documents() {
                     rows={3}
                     title="Descrição do documento"
                     placeholder="Digite uma descrição para o documento"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                    className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                   />
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label htmlFor="doc-type" className="block text-sm font-medium text-gray-700 mb-1">Tipo *</label>
+                    <label htmlFor="doc-type" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Tipo *</label>
                     <select
                       id="doc-type"
                       required
@@ -271,7 +271,7 @@ export default function Documents() {
                       onChange={(e) => setUploadData({ ...uploadData, type: e.target.value })}
                       title="Tipo do documento"
                       aria-label="Selecione o tipo do documento"
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                      className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                     >
                       {Object.entries(typeLabels).map(([key, label]) => (
                         <option key={key} value={key}>{label}</option>
@@ -280,14 +280,14 @@ export default function Documents() {
                   </div>
 
                   <div>
-                    <label htmlFor="doc-case" className="block text-sm font-medium text-gray-700 mb-1">Processo (opcional)</label>
+                    <label htmlFor="doc-case" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Processo (opcional)</label>
                     <select
                       id="doc-case"
                       value={uploadData.caseId}
                       onChange={(e) => setUploadData({ ...uploadData, caseId: e.target.value })}
                       title="Processo relacionado"
                       aria-label="Selecione o processo relacionado (opcional)"
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                      className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                     >
                       <option value="">Selecione um processo</option>
                       {cases?.map((c: any) => (
@@ -298,12 +298,12 @@ export default function Documents() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Arquivo *</label>
-                  <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-lg hover:border-primary-500 transition-colors">
+                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Arquivo *</label>
+                  <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-slate-300 dark:border-slate-600 border-dashed rounded-lg hover:border-primary-500 transition-colors">
                     <div className="space-y-1 text-center">
-                      <DocumentTextIcon className="mx-auto h-12 w-12 text-gray-400" />
-                      <div className="flex text-sm text-gray-600">
-                        <label className="relative cursor-pointer bg-white rounded-md font-medium text-primary-600 hover:text-primary-500 focus-within:outline-none">
+                      <DocumentTextIcon className="mx-auto h-12 w-12 text-slate-400 dark:text-slate-500" />
+                      <div className="flex text-sm text-slate-600 dark:text-slate-400">
+                        <label className="relative cursor-pointer bg-white dark:bg-slate-900 rounded-md font-medium text-primary-600 hover:text-primary-500 focus-within:outline-none">
                           <span>Escolher arquivo</span>
                           <input
                             type="file"
@@ -315,7 +315,7 @@ export default function Documents() {
                         </label>
                         <p className="pl-1">ou arraste e solte</p>
                       </div>
-                      <p className="text-xs text-gray-500">PDF, DOC, DOCX, JPG, PNG até 10MB</p>
+                      <p className="text-xs text-slate-500 dark:text-slate-400">PDF, DOC, DOCX, JPG, PNG até 10MB</p>
                       {uploadFile && (
                         <p className="text-sm text-green-600 font-medium mt-2">
                           Arquivo selecionado: {uploadFile.name}
@@ -329,7 +329,7 @@ export default function Documents() {
                   <button
                     type="button"
                     onClick={() => setIsUploadModalOpen(false)}
-                    className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50"
+                    className="px-4 py-2 border border-slate-300 dark:border-slate-600 rounded-lg text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800"
                   >
                     Cancelar
                   </button>

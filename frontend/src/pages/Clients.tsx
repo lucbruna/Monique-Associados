@@ -4,6 +4,7 @@ import api from '../lib/axios';
 import { toast } from 'react-hot-toast';
 import { useForm } from 'react-hook-form';
 import { PencilIcon, TrashIcon, EyeIcon, XMarkIcon } from '@heroicons/react/24/outline';
+import { useAuthStore } from '../store/authStore';
 
 type ClientForm = {
   name: string;
@@ -22,6 +23,18 @@ export default function Clients() {
   const [selectedClient, setSelectedClient] = useState<any>(null);
   const [viewClient, setViewClient] = useState<any>(null);
   const queryClient = useQueryClient();
+  const permissions = useAuthStore((state) => state.permissions);
+  const user = useAuthStore((state) => state.user);
+
+  // As permissões ficam persistidas no localStorage e podem vir de uma sessão
+  // anterior a estas permissões existirem. Por isso, quando a chave não veio,
+  // caímos no cargo em vez de esconder a ação. O backend segue sendo a
+  // autoridade: ele devolve 403 com a mensagem correta se o cargo não puder.
+  const DELETE_CLIENT_ROLES = ['SUPER_ADMIN', 'SOCIO'];
+  const canDeleteClient =
+    permissions?.canDeleteClient ?? (user?.role ? DELETE_CLIENT_ROLES.includes(user.role) : false);
+  const canCascadeDelete =
+    permissions?.canDeleteAny ?? (user?.role === 'SUPER_ADMIN');
 
   const { register, handleSubmit, reset, formState: { errors } } = useForm<ClientForm>();
 
@@ -62,11 +75,25 @@ export default function Clients() {
 
   const deleteMutation = useMutation({
     mutationFn: (id: string) => api.delete(`/clients/${id}`),
-    onSuccess: () => {
+    onSuccess: (response) => {
       queryClient.invalidateQueries({ queryKey: ['clients'] });
-      toast.success('Cliente excluído com sucesso!');
+      const removedCases = response?.data?.data?.removedCases ?? 0;
+      const message = response?.data?.message;
+      if (removedCases > 0) {
+        toast.success(message || `Cliente e ${removedCases} processo(s) vinculado(s) excluídos.`);
+      } else {
+        toast.success(message || 'Cliente excluído com sucesso!');
+      }
     },
-    onError: () => toast.error('Erro ao excluir cliente'),
+    onError: (error: any) => {
+      const status = error?.response?.status;
+      const serverMessage = error?.response?.data?.message;
+      if (status === 403) {
+        toast.error(serverMessage || 'Você não tem permissão para excluir clientes.');
+      } else {
+        toast.error(serverMessage || 'Erro ao excluir cliente');
+      }
+    },
   });
 
   const openCreateModal = () => {
@@ -99,9 +126,24 @@ export default function Clients() {
     }
   };
 
-  const handleDelete = (id: string) => {
-    if (confirm('Tem certeza que deseja excluir este cliente?')) {
-      deleteMutation.mutate(id);
+  const handleDelete = (client: any) => {
+    const caseCount = client?._count?.cases ?? 0;
+
+    // Cliente com processos vinculados: exclusão em cascata é exclusiva do SUPER_ADMIN
+    if (caseCount > 0 && !canCascadeDelete) {
+      toast.error(
+        'Este cliente possui processos vinculados. Somente o SUPER_ADMIN pode excluí-lo.'
+      );
+      return;
+    }
+
+    const message =
+      caseCount > 0
+        ? `Excluir "${client.name}"?\n\nEste cliente tem ${caseCount} processo(s) vinculado(s) que também serão excluídos, junto com prazos, audiências, documentos, honorários e notas. Esta ação não pode ser desfeita.`
+        : 'Tem certeza que deseja excluir este cliente?';
+
+    if (confirm(message)) {
+      deleteMutation.mutate(client.id);
     }
   };
 
@@ -109,8 +151,9 @@ export default function Clients() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-dark-900">Clientes</h1>
-          <p className="text-gray-600 mt-1">Gerencie seus clientes</p>
+          <h1 className="text-3xl font-bold text-gold dark:text-gold-light">Clientes</h1>
+          <p className="text-slate-600 dark:text-slate-400 mt-1">Gerencie seus clientes</p>
+          <span className="gold-rule mt-3" aria-hidden="true"></span>
         </div>
         <button onClick={openCreateModal} className="btn btn-primary">+ Novo Cliente</button>
       </div>
@@ -120,31 +163,29 @@ export default function Clients() {
           {isLoading ? (
             <div className="text-center py-8">Carregando...</div>
           ) : (
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
+            <table className="min-w-full divide-y divide-slate-200">
+              <thead className="bg-slate-50 dark:bg-slate-950">
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Nome</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Tipo</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">CPF/CNPJ</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Email</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Telefone</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Ações</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase">Nome</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase">Tipo</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase">CPF/CNPJ</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase">Email</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase">Telefone</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase">Ações</th>
                 </tr>
               </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
+              <tbody className="bg-white dark:bg-slate-900 divide-y divide-slate-200">
                 {clients?.map((client: any) => (
-                  <tr key={client.id} className="hover:bg-gray-50">
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{client.name}</td>
+                  <tr key={client.id} className="hover:bg-slate-50 dark:hover:bg-slate-800">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-slate-900 dark:text-slate-100">{client.name}</td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`px-2 py-1 text-xs font-semibold rounded-full ${
-                        client.type === 'PESSOA_FISICA' ? 'bg-blue-100 text-blue-800' : 'bg-purple-100 text-purple-800'
-                      }`}>
+                      <span className={`px-2 py-1 text-xs font-semibold rounded-full ${ client.type === 'PESSOA_FISICA' ? 'bg-blue-100 text-blue-800' : 'bg-purple-100 text-purple-800' }`}>
                         {client.type === 'PESSOA_FISICA' ? 'PF' : 'PJ'}
                       </span>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{client.cpfCnpj}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{client.email}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{client.phone}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-500 dark:text-slate-400">{client.cpfCnpj}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-500 dark:text-slate-400">{client.email}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-500 dark:text-slate-400">{client.phone}</td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
                       <button
                         onClick={() => setViewClient(client)}
@@ -158,18 +199,20 @@ export default function Clients() {
                         onClick={() => openEditModal(client)}
                         title="Editar cliente"
                         aria-label={`Editar ${client.name}`}
-                        className="text-gray-600 hover:text-gray-900 inline-flex items-center gap-1"
+                        className="text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 inline-flex items-center gap-1"
                       >
                         <PencilIcon className="h-4 w-4" /> Editar
                       </button>
-                      <button
-                        onClick={() => handleDelete(client.id)}
-                        title="Excluir cliente"
-                        aria-label={`Excluir ${client.name}`}
-                        className="text-red-600 hover:text-red-900 inline-flex items-center gap-1"
-                      >
-                        <TrashIcon className="h-4 w-4" /> Excluir
-                      </button>
+                      {canDeleteClient && (
+                        <button
+                          onClick={() => handleDelete(client)}
+                          title="Excluir cliente"
+                          aria-label={`Excluir ${client.name}`}
+                          className="text-red-600 hover:text-red-900 inline-flex items-center gap-1"
+                        >
+                          <TrashIcon className="h-4 w-4" /> Excluir
+                        </button>
+                      )}
                     </td>
                   </tr>
                 ))}
@@ -182,17 +225,17 @@ export default function Clients() {
       {/* Modal de Criação/Edição */}
       {isModalOpen && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+          <div className="bg-white dark:bg-slate-900 rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
             <div className="p-6">
               <div className="flex justify-between items-center mb-4">
-                <h2 className="text-2xl font-bold text-dark-900">
+                <h2 className="text-2xl font-bold text-slate-900 dark:text-slate-100">
                   {selectedClient ? 'Editar Cliente' : 'Novo Cliente'}
                 </h2>
                 <button 
                   onClick={() => setIsModalOpen(false)} 
                   title="Fechar"
                   aria-label="Fechar modal"
-                  className="text-gray-500 hover:text-gray-700"
+                  className="text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200"
                 >
                   <XMarkIcon className="h-6 w-6" />
                 </button>
@@ -201,20 +244,20 @@ export default function Clients() {
               <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="md:col-span-2">
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Nome *</label>
+                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Nome *</label>
                     <input
                       type="text"
                       {...register('name', { required: 'Nome é obrigatório' })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                      className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                     />
                     {errors.name && <p className="text-red-600 text-sm mt-1">{errors.name.message}</p>}
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Tipo *</label>
+                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Tipo *</label>
                     <select
                       {...register('type', { required: true })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                      className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                     >
                       <option value="PESSOA_FISICA">Pessoa Física</option>
                       <option value="PESSOA_JURIDICA">Pessoa Jurídica</option>
@@ -222,69 +265,69 @@ export default function Clients() {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">CPF/CNPJ *</label>
+                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">CPF/CNPJ *</label>
                     <input
                       type="text"
                       {...register('cpfCnpj', { required: 'CPF/CNPJ é obrigatório' })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                      className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                     />
                     {errors.cpfCnpj && <p className="text-red-600 text-sm mt-1">{errors.cpfCnpj.message}</p>}
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Email *</label>
+                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Email *</label>
                     <input
                       type="email"
                       {...register('email', { required: 'Email é obrigatório' })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                      className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                     />
                     {errors.email && <p className="text-red-600 text-sm mt-1">{errors.email.message}</p>}
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Telefone *</label>
+                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Telefone *</label>
                     <input
                       type="tel"
                       {...register('phone', { required: 'Telefone é obrigatório' })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                      className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                     />
                     {errors.phone && <p className="text-red-600 text-sm mt-1">{errors.phone.message}</p>}
                   </div>
 
                   <div className="md:col-span-2">
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Endereço</label>
+                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Endereço</label>
                     <input
                       type="text"
                       {...register('address')}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                      className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Cidade</label>
+                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Cidade</label>
                     <input
                       type="text"
                       {...register('city')}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                      className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Estado</label>
+                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Estado</label>
                     <input
                       type="text"
                       {...register('state')}
                       maxLength={2}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                      className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                     />
                   </div>
 
                   <div className="md:col-span-2">
-                    <label className="block text-sm font-medium text-gray-700 mb-1">CEP</label>
+                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">CEP</label>
                     <input
                       type="text"
                       {...register('zipCode')}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                      className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                     />
                   </div>
                 </div>
@@ -293,7 +336,7 @@ export default function Clients() {
                   <button
                     type="button"
                     onClick={() => setIsModalOpen(false)}
-                    className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50"
+                    className="px-4 py-2 border border-slate-300 dark:border-slate-600 rounded-lg text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800"
                   >
                     Cancelar
                   </button>
@@ -314,15 +357,15 @@ export default function Clients() {
       {/* Modal de Visualização */}
       {viewClient && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full">
+          <div className="bg-white dark:bg-slate-900 rounded-lg shadow-xl max-w-2xl w-full">
             <div className="p-6">
               <div className="flex justify-between items-center mb-4">
-                <h2 className="text-2xl font-bold text-dark-900">Detalhes do Cliente</h2>
+                <h2 className="text-2xl font-bold text-slate-900 dark:text-slate-100">Detalhes do Cliente</h2>
                 <button 
                   onClick={() => setViewClient(null)} 
                   title="Fechar"
                   aria-label="Fechar detalhes"
-                  className="text-gray-500 hover:text-gray-700"
+                  className="text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200"
                 >
                   <XMarkIcon className="h-6 w-6" />
                 </button>
@@ -331,40 +374,40 @@ export default function Clients() {
               <div className="space-y-4">
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="text-sm font-medium text-gray-500">Nome</label>
-                    <p className="text-dark-900 mt-1">{viewClient.name}</p>
+                    <label className="text-sm font-medium text-slate-500 dark:text-slate-400">Nome</label>
+                    <p className="text-slate-900 dark:text-slate-100 mt-1">{viewClient.name}</p>
                   </div>
                   <div>
-                    <label className="text-sm font-medium text-gray-500">Tipo</label>
-                    <p className="text-dark-900 mt-1">{viewClient.type === 'PESSOA_FISICA' ? 'Pessoa Física' : 'Pessoa Jurídica'}</p>
+                    <label className="text-sm font-medium text-slate-500 dark:text-slate-400">Tipo</label>
+                    <p className="text-slate-900 dark:text-slate-100 mt-1">{viewClient.type === 'PESSOA_FISICA' ? 'Pessoa Física' : 'Pessoa Jurídica'}</p>
                   </div>
                   <div>
-                    <label className="text-sm font-medium text-gray-500">CPF/CNPJ</label>
-                    <p className="text-dark-900 mt-1">{viewClient.cpfCnpj}</p>
+                    <label className="text-sm font-medium text-slate-500 dark:text-slate-400">CPF/CNPJ</label>
+                    <p className="text-slate-900 dark:text-slate-100 mt-1">{viewClient.cpfCnpj}</p>
                   </div>
                   <div>
-                    <label className="text-sm font-medium text-gray-500">Email</label>
-                    <p className="text-dark-900 mt-1">{viewClient.email}</p>
+                    <label className="text-sm font-medium text-slate-500 dark:text-slate-400">Email</label>
+                    <p className="text-slate-900 dark:text-slate-100 mt-1">{viewClient.email}</p>
                   </div>
                   <div>
-                    <label className="text-sm font-medium text-gray-500">Telefone</label>
-                    <p className="text-dark-900 mt-1">{viewClient.phone}</p>
+                    <label className="text-sm font-medium text-slate-500 dark:text-slate-400">Telefone</label>
+                    <p className="text-slate-900 dark:text-slate-100 mt-1">{viewClient.phone}</p>
                   </div>
                   <div>
-                    <label className="text-sm font-medium text-gray-500">CEP</label>
-                    <p className="text-dark-900 mt-1">{viewClient.zipCode || '-'}</p>
+                    <label className="text-sm font-medium text-slate-500 dark:text-slate-400">CEP</label>
+                    <p className="text-slate-900 dark:text-slate-100 mt-1">{viewClient.zipCode || '-'}</p>
                   </div>
                   <div className="col-span-2">
-                    <label className="text-sm font-medium text-gray-500">Endereço</label>
-                    <p className="text-dark-900 mt-1">{viewClient.address || '-'}</p>
+                    <label className="text-sm font-medium text-slate-500 dark:text-slate-400">Endereço</label>
+                    <p className="text-slate-900 dark:text-slate-100 mt-1">{viewClient.address || '-'}</p>
                   </div>
                   <div>
-                    <label className="text-sm font-medium text-gray-500">Cidade</label>
-                    <p className="text-dark-900 mt-1">{viewClient.city || '-'}</p>
+                    <label className="text-sm font-medium text-slate-500 dark:text-slate-400">Cidade</label>
+                    <p className="text-slate-900 dark:text-slate-100 mt-1">{viewClient.city || '-'}</p>
                   </div>
                   <div>
-                    <label className="text-sm font-medium text-gray-500">Estado</label>
-                    <p className="text-dark-900 mt-1">{viewClient.state || '-'}</p>
+                    <label className="text-sm font-medium text-slate-500 dark:text-slate-400">Estado</label>
+                    <p className="text-slate-900 dark:text-slate-100 mt-1">{viewClient.state || '-'}</p>
                   </div>
                 </div>
 

@@ -8,3 +8,6 @@ export { default as Deadlines } from './Deadlines';
 export { default as Fees } from './Fees';
 export { default as Settings } from './Settings';
 export { default as Login } from './Login';
+
+export { default as ConstituicaoFederal } from './legal/ConstituicaoFederal';
+export { default as VadeMecum } from './legal/VadeMecum';

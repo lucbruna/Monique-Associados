@@ -79,7 +79,7 @@ export default function Fees() {
     queryKey: ['cases'],
     queryFn: async () => {
       const res = await api.get('/cases');
-      return res.data.data;
+      return res.data.data.cases;
     },
   });
 
@@ -91,7 +91,7 @@ export default function Fees() {
       toast.success('Honorário criado com sucesso!');
       closeModal();
     },
-    onError: () => toast.error('Erro ao criar honorário'),
+    onError: (err: any) => toast.error(err.response?.data?.message || 'Erro ao criar honorário'),
   });
 
   const updateMutation = useMutation({
@@ -102,7 +102,7 @@ export default function Fees() {
       toast.success('Honorário atualizado com sucesso!');
       closeModal();
     },
-    onError: () => toast.error('Erro ao atualizar honorário'),
+    onError: (err: any) => toast.error(err.response?.data?.message || 'Erro ao atualizar honorário'),
   });
 
   const deleteMutation = useMutation({
@@ -183,15 +183,15 @@ export default function Fees() {
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'PAGO':
-        return 'bg-green-100 text-green-800 border-green-200';
+        return 'bg-green-100 text-green-800 border-green-200 dark:bg-emerald-500/15 dark:text-emerald-300 dark:border-emerald-700';
       case 'PENDENTE':
-        return 'bg-yellow-100 text-yellow-800 border-yellow-200';
+        return 'bg-yellow-100 text-yellow-800 border-yellow-200 dark:bg-amber-500/15 dark:text-amber-300 dark:border-amber-700';
       case 'ATRASADO':
-        return 'bg-red-100 text-red-800 border-red-200';
+        return 'bg-red-100 text-red-800 border-red-200 dark:bg-red-500/15 dark:text-red-300 dark:border-red-700';
       case 'CANCELADO':
-        return 'bg-gray-100 text-gray-800 border-gray-200';
+        return 'bg-slate-100 text-slate-800 border-slate-200 dark:bg-slate-500/20 dark:text-slate-300 dark:border-slate-600';
       default:
-        return 'bg-gray-100 text-gray-800 border-gray-200';
+        return 'bg-slate-100 text-slate-800 border-slate-200 dark:bg-slate-500/20 dark:text-slate-300 dark:border-slate-600';
     }
   };
 
@@ -204,7 +204,7 @@ export default function Fees() {
       case 'PENDENTE':
         return <ClockIcon className="h-5 w-5 text-yellow-600" />;
       default:
-        return <ClockIcon className="h-5 w-5 text-gray-600" />;
+        return <ClockIcon className="h-5 w-5 text-slate-600 dark:text-slate-400" />;
     }
   };
 
@@ -227,8 +227,8 @@ export default function Fees() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-dark-900">Honorários</h1>
-          <p className="text-gray-600 mt-1">Gestão de honorários e faturamento</p>
+          <h1 className="text-3xl font-bold text-gold dark:text-gold-light">Honorários</h1>
+          <p className="text-slate-600 dark:text-slate-400 mt-1">Gestão de honorários e faturamento</p>
         </div>
         <button
           onClick={() => setIsModalOpen(true)}
@@ -242,34 +242,34 @@ export default function Fees() {
       {/* Cards de Estatísticas */}
       {stats && (
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <div className="bg-white rounded-lg shadow-md p-6 border-l-4 border-yellow-500">
+          <div className="bg-white dark:bg-slate-900 rounded-lg shadow-md p-6 border-l-4 border-yellow-500">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-gray-600 text-sm font-medium">Pendentes</p>
-                <p className="text-2xl font-bold text-dark-900 mt-1">{stats.totalPendente}</p>
-                <p className="text-sm text-gray-500 mt-2">{formatCurrency(stats.valorPendente)}</p>
+                <p className="text-slate-600 dark:text-slate-400 text-sm font-medium">Pendentes</p>
+                <p className="text-2xl font-bold text-slate-900 dark:text-slate-100 mt-1">{stats.totalPendente}</p>
+                <p className="text-sm text-slate-500 dark:text-slate-400 mt-2">{formatCurrency(stats.valorPendente)}</p>
               </div>
               <ClockIcon className="h-12 w-12 text-yellow-500" />
             </div>
           </div>
 
-          <div className="bg-white rounded-lg shadow-md p-6 border-l-4 border-green-500">
+          <div className="bg-white dark:bg-slate-900 rounded-lg shadow-md p-6 border-l-4 border-green-500">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-gray-600 text-sm font-medium">Pagos</p>
-                <p className="text-2xl font-bold text-dark-900 mt-1">{stats.totalPago}</p>
-                <p className="text-sm text-gray-500 mt-2">{formatCurrency(stats.valorPago)}</p>
+                <p className="text-slate-600 dark:text-slate-400 text-sm font-medium">Pagos</p>
+                <p className="text-2xl font-bold text-slate-900 dark:text-slate-100 mt-1">{stats.totalPago}</p>
+                <p className="text-sm text-slate-500 dark:text-slate-400 mt-2">{formatCurrency(stats.valorPago)}</p>
               </div>
               <CheckCircleIcon className="h-12 w-12 text-green-500" />
             </div>
           </div>
 
-          <div className="bg-white rounded-lg shadow-md p-6 border-l-4 border-red-500">
+          <div className="bg-white dark:bg-slate-900 rounded-lg shadow-md p-6 border-l-4 border-red-500">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-gray-600 text-sm font-medium">Atrasados</p>
-                <p className="text-2xl font-bold text-dark-900 mt-1">{stats.totalAtrasado}</p>
-                <p className="text-sm text-gray-500 mt-2">{formatCurrency(stats.valorAtrasado)}</p>
+                <p className="text-slate-600 dark:text-slate-400 text-sm font-medium">Atrasados</p>
+                <p className="text-2xl font-bold text-slate-900 dark:text-slate-100 mt-1">{stats.totalAtrasado}</p>
+                <p className="text-sm text-slate-500 dark:text-slate-400 mt-2">{formatCurrency(stats.valorAtrasado)}</p>
               </div>
               <ExclamationTriangleIcon className="h-12 w-12 text-red-500" />
             </div>
@@ -278,17 +278,17 @@ export default function Fees() {
       )}
 
       {/* Filtros */}
-      <div className="bg-white rounded-lg shadow-md p-4">
+      <div className="bg-white dark:bg-slate-900 rounded-lg shadow-md p-4">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
-            <label htmlFor="status-filter" className="block text-sm font-medium text-gray-700 mb-1">
+            <label htmlFor="status-filter" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
               Filtrar por Status
             </label>
             <select
               id="status-filter"
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+              className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
             >
               <option value="">Todos os status</option>
               <option value="PENDENTE">Pendente</option>
@@ -299,14 +299,14 @@ export default function Fees() {
           </div>
 
           <div>
-            <label htmlFor="type-filter" className="block text-sm font-medium text-gray-700 mb-1">
+            <label htmlFor="type-filter" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
               Filtrar por Tipo
             </label>
             <select
               id="type-filter"
               value={typeFilter}
               onChange={(e) => setTypeFilter(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+              className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
             >
               <option value="">Todos os tipos</option>
               <option value="HONORARIO">Honorário</option>
@@ -320,69 +320,67 @@ export default function Fees() {
       </div>
 
       {/* Lista de Honorários */}
-      <div className="bg-white rounded-lg shadow-md overflow-hidden">
+      <div className="bg-white dark:bg-slate-900 rounded-lg shadow-md overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full">
-            <thead className="bg-gray-50 border-b border-gray-200">
+            <thead className="bg-slate-50 dark:bg-slate-950 border-b border-slate-200 dark:border-slate-700">
               <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">
                   Status
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">
                   Descrição
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">
                   Processo/Cliente
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">
                   Tipo
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">
                   Valor
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">
                   Vencimento
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">
                   Ações
                 </th>
               </tr>
             </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
+            <tbody className="bg-white dark:bg-slate-900 divide-y divide-slate-200">
               {fees && fees.length > 0 ? (
                 fees.map((fee) => (
-                  <tr key={fee.id} className="hover:bg-gray-50">
+                  <tr key={fee.id} className="hover:bg-slate-50 dark:hover:bg-slate-800">
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center gap-2">
                         {getStatusIcon(fee.status)}
                         <span
-                          className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full border ${getStatusColor(
-                            fee.status
-                          )}`}
+                          className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full border ${getStatusColor( fee.status )}`}
                         >
                           {statusLabels[fee.status]}
                         </span>
                       </div>
                     </td>
                     <td className="px-6 py-4">
-                      <div className="text-sm font-medium text-dark-900">{fee.description}</div>
+                      <div className="text-sm font-medium text-slate-900 dark:text-slate-100">{fee.description}</div>
                     </td>
                     <td className="px-6 py-4">
-                      <div className="text-sm text-dark-900">{fee.case.caseNumber}</div>
-                      <div className="text-xs text-gray-500">{fee.case.client.name}</div>
+                      <div className="text-sm text-slate-900 dark:text-slate-100">{fee.case.caseNumber}</div>
+                      <div className="text-xs text-slate-500 dark:text-slate-400">{fee.case.client.name}</div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <span className="text-sm text-gray-900">{typeLabels[fee.type] || fee.type}</span>
+                      <span className="text-sm text-slate-900 dark:text-slate-100">{typeLabels[fee.type] || fee.type}</span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <span className="text-sm font-semibold text-dark-900">{formatCurrency(fee.amount)}</span>
+                      <span className="text-sm font-semibold text-slate-900 dark:text-slate-100">{formatCurrency(fee.amount)}</span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <span className="text-sm text-gray-900">
+                      <span className="text-sm text-slate-900 dark:text-slate-100">
                         {new Date(fee.dueDate).toLocaleDateString('pt-BR')}
                       </span>
                       {fee.paidDate && (
-                        <div className="text-xs text-gray-500">
+                        <div className="text-xs text-slate-500 dark:text-slate-400">
                           Pago: {new Date(fee.paidDate).toLocaleDateString('pt-BR')}
                         </div>
                       )}
@@ -418,8 +416,8 @@ export default function Fees() {
                 ))
               ) : (
                 <tr>
-                  <td colSpan={7} className="px-6 py-12 text-center text-gray-500">
-                    <BanknotesIcon className="h-12 w-12 mx-auto mb-4 text-gray-300" />
+                  <td colSpan={7} className="px-6 py-12 text-center text-slate-500 dark:text-slate-400">
+                    <BanknotesIcon className="h-12 w-12 mx-auto mb-4 text-slate-300 dark:text-slate-400" />
                     <p>Nenhum honorário encontrado</p>
                     <button
                       onClick={() => setIsModalOpen(true)}
@@ -438,17 +436,17 @@ export default function Fees() {
       {/* Modal de Criar/Editar */}
       {isModalOpen && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+          <div className="bg-white dark:bg-slate-900 rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
             <div className="p-6">
               <div className="flex justify-between items-center mb-4">
-                <h2 className="text-2xl font-bold text-dark-900">
+                <h2 className="text-2xl font-bold text-slate-900 dark:text-slate-100">
                   {editingFee ? 'Editar Honorário' : 'Novo Honorário'}
                 </h2>
                 <button
                   onClick={closeModal}
                   title="Fechar"
                   aria-label="Fechar modal"
-                  className="text-gray-500 hover:text-gray-700"
+                  className="text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200"
                 >
                   <XMarkIcon className="h-6 w-6" />
                 </button>
@@ -456,7 +454,7 @@ export default function Fees() {
 
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div>
-                  <label htmlFor="fee-description" className="block text-sm font-medium text-gray-700 mb-1">
+                  <label htmlFor="fee-description" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
                     Descrição *
                   </label>
                   <input
@@ -465,14 +463,14 @@ export default function Fees() {
                     required
                     value={formData.description}
                     onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                    className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                     placeholder="Ex: Honorários advocatícios contratuais"
                   />
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label htmlFor="fee-amount" className="block text-sm font-medium text-gray-700 mb-1">
+                    <label htmlFor="fee-amount" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
                       Valor (R$) *
                     </label>
                     <input
@@ -482,13 +480,13 @@ export default function Fees() {
                       required
                       value={formData.amount}
                       onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                      className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                       placeholder="0.00"
                     />
                   </div>
 
                   <div>
-                    <label htmlFor="fee-dueDate" className="block text-sm font-medium text-gray-700 mb-1">
+                    <label htmlFor="fee-dueDate" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
                       Vencimento *
                     </label>
                     <input
@@ -497,13 +495,13 @@ export default function Fees() {
                       required
                       value={formData.dueDate}
                       onChange={(e) => setFormData({ ...formData, dueDate: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                      className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                     />
                   </div>
                 </div>
 
                 <div>
-                  <label htmlFor="fee-type" className="block text-sm font-medium text-gray-700 mb-1">
+                  <label htmlFor="fee-type" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
                     Tipo *
                   </label>
                   <select
@@ -511,7 +509,7 @@ export default function Fees() {
                     required
                     value={formData.type}
                     onChange={(e) => setFormData({ ...formData, type: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                    className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                   >
                     <option value="HONORARIO">Honorário</option>
                     <option value="CUSTAS">Custas Processuais</option>
@@ -522,7 +520,7 @@ export default function Fees() {
                 </div>
 
                 <div>
-                  <label htmlFor="fee-case" className="block text-sm font-medium text-gray-700 mb-1">
+                  <label htmlFor="fee-case" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
                     Processo *
                   </label>
                   <select
@@ -530,7 +528,7 @@ export default function Fees() {
                     required
                     value={formData.caseId}
                     onChange={(e) => setFormData({ ...formData, caseId: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                    className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                   >
                     <option value="">Selecione um processo</option>
                     {cases?.map((c: any) => (
@@ -545,7 +543,7 @@ export default function Fees() {
                   <button
                     type="button"
                     onClick={closeModal}
-                    className="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
+                    className="px-4 py-2 text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-slate-950 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
                   >
                     Cancelar
                   </button>

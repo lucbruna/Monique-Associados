@@ -1,68 +1,13 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
+// CRM Jurídico - Monique Advogados
+// Adaptado para SQLite (sem enums do Prisma)
 
 generator client {
   provider = "prisma-client-js"
 }
 
 datasource db {
-  provider = "postgresql"
+  provider = "sqlite"
   url      = env("DATABASE_URL")
-}
-
-enum UserRole {
-  SOCIO
-  ADVOGADO
-  ESTAGIARIO
-  ADMINISTRATIVO
-}
-
-enum CaseStatus {
-  ATIVO
-  ARQUIVADO
-  SUSPENSO
-  ENCERRADO
-}
-
-enum CaseType {
-  TRABALHISTA
-  CIVIL
-  CRIMINAL
-  TRIBUTARIO
-  FAMILIA
-  PREVIDENCIARIO
-  EMPRESARIAL
-  CONSUMIDOR
-  OUTROS
-}
-
-enum DocumentType {
-  PETICAO
-  PROCURACAO
-  CONTRATO
-  ATA
-  PARECER
-  OUTROS
-}
-
-enum AppointmentType {
-  AUDIENCIA
-  REUNIAO
-  ATENDIMENTO
-  DILIGENCIA
-}
-
-enum FeeStatus {
-  PENDENTE
-  PAGO
-  ATRASADO
-  CANCELADO
-}
-
-enum ContractStatus {
-  ATIVO
-  VENCIDO
-  CANCELADO
 }
 
 model User {
@@ -73,7 +18,7 @@ model User {
   cpf               String?   @unique
   oab               String?
   phone             String?
-  role              UserRole  @default(ADVOGADO)
+  role              String    @default("ADVOGADO")
   isActive          Boolean   @default(true)
   twoFactorEnabled  Boolean   @default(false)
   twoFactorSecret   String?
@@ -81,10 +26,9 @@ model User {
   createdAt         DateTime  @default(now())
   updatedAt         DateTime  @updatedAt
 
-  // Relações
-  casesResponsible  Case[]         @relation("ResponsibleLawyer")
+  casesResponsible  Case[]
   appointments      Appointment[]
-  documents         Document[]     @relation("DocumentCreator")
+  documents         Document[]
   auditLogs         AuditLog[]
   notes             Note[]
   refreshTokens     RefreshToken[]
@@ -110,7 +54,7 @@ model Client {
   email         String?
   phone         String?
   cpfCnpj       String   @unique
-  type          String   // PESSOA_FISICA ou PESSOA_JURIDICA
+  type          String
   address       String?
   city          String?
   state         String?
@@ -120,7 +64,6 @@ model Client {
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
-  // Relações
   cases         Case[]
   contracts     Contract[]
 
@@ -132,8 +75,8 @@ model Case {
   caseNumber      String     @unique
   title           String
   description     String?
-  type            CaseType
-  status          CaseStatus @default(ATIVO)
+  type            String
+  status          String     @default("ATIVO")
   court           String?
   jurisdiction    String?
   judge           String?
@@ -145,15 +88,16 @@ model Case {
   createdAt       DateTime   @default(now())
   updatedAt       DateTime   @updatedAt
 
-  // Relações
-  client          Client       @relation(fields: [clientId], references: [id], onDelete: Restrict)
-  responsible     User         @relation("ResponsibleLawyer", fields: [responsibleId], references: [id])
+  client          Client     @relation(fields: [clientId], references: [id], onDelete: Restrict)
+  responsible     User       @relation(fields: [responsibleId], references: [id])
   parties         Party[]
   deadlines       Deadline[]
   hearings        Hearing[]
   documents       Document[]
   notes           Note[]
   fees            Fee[]
+  appointments    Appointment[]
+  expenses        Expense[]
 
   @@map("cases")
 }
@@ -161,7 +105,7 @@ model Case {
 model Party {
   id        String   @id @default(uuid())
   name      String
-  role      String   // RÉU, AUTOR, TESTEMUNHA, etc.
+  role      String
   cpfCnpj   String?
   lawyer    String?
   contact   String?
@@ -180,28 +124,28 @@ model Deadline {
   dueDate     DateTime
   isCompleted Boolean   @default(false)
   completedAt DateTime?
-  priority    String    @default("MEDIA") // BAIXA, MEDIA, ALTA, URGENTE
-  caseId      String
+  priority    String    @default("MEDIA")
+  caseId      String?
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
 
-  case Case @relation(fields: [caseId], references: [id], onDelete: Cascade)
+  case Case? @relation(fields: [caseId], references: [id], onDelete: Cascade)
 
   @@map("deadlines")
 }
 
 model Hearing {
-  id          String          @id @default(uuid())
+  id          String   @id @default(uuid())
   title       String
   description String?
   date        DateTime
   location    String?
-  type        String          // INICIAL, INSTRUÇÃO, SENTENÇA, etc.
-  status      String          @default("AGENDADA") // AGENDADA, REALIZADA, CANCELADA
+  type        String
+  status      String   @default("AGENDADA")
   notes       String?
   caseId      String
-  createdAt   DateTime        @default(now())
-  updatedAt   DateTime        @updatedAt
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
   case Case @relation(fields: [caseId], references: [id], onDelete: Cascade)
 
@@ -209,42 +153,44 @@ model Hearing {
 }
 
 model Document {
-  id          String       @id @default(uuid())
+  id          String   @id @default(uuid())
   title       String
   description String?
-  type        DocumentType
+  type        String
   fileName    String
   filePath    String
   fileSize    Int
   mimeType    String
-  version     Int          @default(1)
+  version     Int      @default(1)
   caseId      String?
   uploadedBy  String
-  createdAt   DateTime     @default(now())
-  updatedAt   DateTime     @updatedAt
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
   case       Case?  @relation(fields: [caseId], references: [id], onDelete: Cascade)
-  uploader   User   @relation("DocumentCreator", fields: [uploadedBy], references: [id])
+  uploader   User   @relation(fields: [uploadedBy], references: [id])
 
   @@map("documents")
 }
 
 model Appointment {
-  id          String          @id @default(uuid())
+  id          String   @id @default(uuid())
   title       String
   description String?
-  type        AppointmentType
+  type        String
   startTime   DateTime
   endTime     DateTime
   location    String?
   participants String?
   userId      String
-  isRecurring Boolean         @default(false)
+  caseId      String?
+  isRecurring Boolean  @default(false)
   recurrence  String?
-  createdAt   DateTime        @default(now())
-  updatedAt   DateTime        @updatedAt
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  case Case?  @relation(fields: [caseId], references: [id], onDelete: Cascade)
 
   @@map("appointments")
 }
@@ -255,9 +201,10 @@ model Fee {
   amount      Float
   dueDate     DateTime
   paidDate    DateTime?
-  status      FeeStatus @default(PENDENTE)
-  type        String    // HONORARIO, CUSTAS, PERICIA, etc.
+  status      String    @default("PENDENTE")
+  type        String
   caseId      String
+  installments Installment[]
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
 
@@ -267,18 +214,18 @@ model Fee {
 }
 
 model Contract {
-  id          String         @id @default(uuid())
+  id          String   @id @default(uuid())
   title       String
   description String?
   value       Float
   startDate   DateTime
   endDate     DateTime?
-  status      ContractStatus @default(ATIVO)
+  status      String   @default("ATIVO")
   terms       String?
   filePath    String?
   clientId    String
-  createdAt   DateTime       @default(now())
-  updatedAt   DateTime       @updatedAt
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
   client Client @relation(fields: [clientId], references: [id], onDelete: Cascade)
 
@@ -301,8 +248,8 @@ model Note {
 
 model AuditLog {
   id          String   @id @default(uuid())
-  action      String   // CREATE, UPDATE, DELETE, LOGIN, LOGOUT, etc.
-  entity      String   // User, Case, Client, etc.
+  action      String
+  entity      String
   entityId    String?
   userId      String?
   ipAddress   String?
@@ -319,9 +266,9 @@ model Template {
   id          String   @id @default(uuid())
   name        String
   description String?
-  content     String   // HTML ou Markdown template
-  category    String   // PETICAO, CONTRATO, etc.
-  variables   String?  // JSON com variáveis disponíveis
+  content     String
+  category    String
+  variables   String?
   isActive    Boolean  @default(true)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
@@ -333,11 +280,168 @@ model Notification {
   id        String   @id @default(uuid())
   title     String
   message   String
-  type      String   // PRAZO, AUDIENCIA, PAGAMENTO, etc.
+  type      String
   isRead    Boolean  @default(false)
   userId    String
   link      String?
   createdAt DateTime @default(now())
 
   @@map("notifications")
+}
+
+// ─────────────────────────────────────────────────────────────
+// Módulo Financeiro
+// ─────────────────────────────────────────────────────────────
+
+/// Parcela de um honorário. É a unidade real de cobrança: o Fee guarda o
+/// valor contratado e as parcelas guardam o que vence, quando e como foi pago.
+model Installment {
+  id          String    @id @default(uuid())
+  number      Int
+  amount      Float
+  dueDate     DateTime
+  paidDate    DateTime?
+  status      String    @default("PENDENTE")
+  method      String?
+  reference   String?
+  pixCode     String?
+  notes       String?
+  feeId       String
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  fee Fee @relation(fields: [feeId], references: [id], onDelete: Cascade)
+
+  @@index([feeId])
+  @@index([status, dueDate])
+
+  @@map("installments")
+}
+
+/// Despesa e custo operacional do escritório
+model Expense {
+  id             String    @id @default(uuid())
+  description    String
+  category       String
+  amount         Float
+  dueDate        DateTime
+  paidDate       DateTime?
+  status         String    @default("PENDENTE")
+  supplier       String?
+  documentNumber String?
+  notes          String?
+  caseId         String?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  case Case? @relation(fields: [caseId], references: [id], onDelete: SetNull)
+
+  @@index([status, dueDate])
+  @@index([category])
+
+  @@map("expenses")
+}
+
+/// Repasse de honorários a sócios. Guarda a referência do período para
+/// que a comissão de um mês possa ser reconstitída e auditada depois.
+model Repasse {
+  id           String    @id @default(uuid())
+  partnerName  String
+  amount       Float
+  referenceDate DateTime
+  period       String?
+  status       String    @default("PENDENTE")
+  notes        String?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  @@index([status])
+  @@index([period])
+
+  @@map("repasses")
+}
+
+/// Configurações do sistema em pares chave/valor (chave PIX, nome do
+/// escritório, regras de comissão, etc.)
+model Setting {
+  key       String   @id
+  value     String
+  updatedAt DateTime @updatedAt
+
+  @@map("settings")
+}
+
+/// Um código ou lei do vademecum. Guarda a procedência do texto porque o
+/// advogado precisa saber de onde veio e quando foi conferido — é isso que
+/// diferencia texto oficial de transcrição duvidosa.
+model LegalCode {
+  id          String    @id @default(uuid())
+  sigla       String    @unique
+  nome        String
+  descricao   String?
+  /// Sigla do ato, ex.: "Lei nº 13.105, de 16 de março de 2015"
+  ato         String?
+  fonteLabel  String
+  fonteUrl    String
+  importadoEm DateTime?
+  artigoCount Int       @default(0)
+  ativo       Boolean   @default(true)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  artigos  LegalArticle[]
+  secoes   LegalSection[]
+
+  @@index([ativo])
+
+  @@map("legal_codes")
+}
+
+/// Divisão do código (livro, título, capítulo, seção). Fica separada do
+/// artigo para montar a navegação sem carregar o texto legal inteiro.
+model LegalSection {
+  id     String @id @default(uuid())
+  rotulo String
+  ordem  Int
+  /// 1 = livro, 2 = título, 3 = capítulo, 4 = seção
+  nivel  Int    @default(2)
+  /// Caminho cumulativo, ex.: "I>II>1" — breadcrumb e ordenação estável
+  path   String
+  codeId String
+
+  code    LegalCode      @relation(fields: [codeId], references: [id], onDelete: Cascade)
+  artigos LegalArticle[]
+
+  @@unique([codeId, path])
+  @@index([codeId, ordem])
+
+  @@map("legal_sections")
+}
+
+/// Um artigo do código. `numero` é texto e não inteiro porque a legislação
+/// brasileira usa sufixos: "5-A", "198-A", "1º", "1.200".
+model LegalArticle {
+  id         String   @id @default(uuid())
+  numero     String
+  /// Epígrafe/ementa do artigo, quando existir
+  rotulo     String?
+  conteudo   String
+  ordem      Int
+  /// "Artigo revogado", "Artigo declarado inconstitucional pelo STF", etc.
+  observacao String?
+  /// Texto anterior vigente, para o caso de o artigo ter mudado de redação
+  textoAnterior String?
+  codeId     String
+  sectionId  String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  code    LegalCode     @relation(fields: [codeId], references: [id], onDelete: Cascade)
+  section LegalSection? @relation(fields: [sectionId], references: [id], onDelete: SetNull)
+
+  @@unique([codeId, numero])
+  @@index([codeId, ordem])
+  @@index([sectionId])
+
+  @@map("legal_articles")
 }

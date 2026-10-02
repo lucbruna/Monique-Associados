@@ -20,15 +20,32 @@ import dashboardRoutes from './routes/dashboard.routes';
 import notificationRoutes from './routes/notification.routes';
 import templateRoutes from './routes/template.routes';
 import auditRoutes from './routes/audit.routes';
+import installmentRoutes from './routes/installment.routes';
+import expenseRoutes from './routes/expense.routes';
+import repasseRoutes from './routes/repasse.routes';
+import financeRoutes from './routes/finance.routes';
 
 dotenv.config();
 
 const app: Application = express();
 
 // Security middleware
-app.use(helmet());
+// This server only exposes JSON APIs and static uploads — it never serves HTML
+// documents — so helmet's document CSP has nothing to protect. Left enabled, it
+// is sent on every response and leaks into any tab opened through the dev proxy,
+// where it becomes the only enforceable CSP and blocks script evaluation
+// (DevTools: "Content Security Policy ... blocks the use of eval").
+app.use(helmet({ contentSecurityPolicy: false }));
+// Allowed origins: CORS_ORIGIN holds a comma-separated list (dev + staging +
+// production), e.g. "http://localhost:3000,https://app.example.com.br".
+// Falls back to the Vite dev server when the variable is not set.
+const corsOrigins = (process.env.CORS_ORIGIN || 'http://localhost:3000')
+  .split(',')
+  .map((origin) => origin.trim())
+  .filter(Boolean);
+
 app.use(cors({
-  origin: process.env.CORS_ORIGIN || '*',
+  origin: corsOrigins,
   credentials: true
 }));
 
@@ -44,8 +61,19 @@ app.use('/api/', limiter);
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Static files (não funciona bem na Vercel, mas mantém para desenvolvimento)
-app.use('/uploads', express.static('uploads'));
+// Static files with CORS + CORP headers for profile images and uploads.
+// Cross-origin resource loading is only needed here, not on API routes.
+app.use('/uploads', (req, res, next) => {
+  res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
+  const requestOrigin = req.headers.origin;
+  if (requestOrigin && corsOrigins.includes(requestOrigin)) {
+    res.setHeader('Access-Control-Allow-Origin', requestOrigin);
+    res.setHeader('Vary', 'Origin');
+  }
+  res.setHeader('Access-Control-Allow-Methods', 'GET, HEAD');
+  res.setHeader('Access-Control-Allow-Credentials', 'true');
+  next();
+}, express.static('uploads'));
 
 // Routes
 app.use('/api/auth', authRoutes);
@@ -62,6 +90,10 @@ app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/templates', templateRoutes);
 app.use('/api/audit', auditRoutes);
+app.use('/api/installments', installmentRoutes);
+app.use('/api/expenses', expenseRoutes);
+app.use('/api/repasses', repasseRoutes);
+app.use('/api/finance', financeRoutes);
 
 // Health check
 app.get('/api/health', (req, res) => {
@@ -75,7 +107,7 @@ app.get('/health', (req, res) => {
 // Root route
 app.get('/', (req, res) => {
   res.json({ 
-    message: 'CRM Jurídico API',
+    message: '⚖️ Monique Advogados API',
     version: '1.0.0',
     status: 'running'
   });

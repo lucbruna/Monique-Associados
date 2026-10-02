@@ -1,9 +1,7 @@
 import { Response, NextFunction } from 'express';
 import { AuthRequest } from '../middleware/auth';
-import { PrismaClient } from '@prisma/client';
+import prisma from '../config/database';
 import { AppError } from '../middleware/errorHandler';
-
-const prisma = new PrismaClient();
 
 export const getFees = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
@@ -120,6 +118,20 @@ export const updateFee = async (req: AuthRequest, res: Response, next: NextFunct
     if (paidDate !== undefined) updateData.paidDate = paidDate ? new Date(paidDate) : null;
     if (status !== undefined) updateData.status = status;
     if (type !== undefined) updateData.type = type;
+
+    // paidDate e derivado do status para nao quebrar os relatorios financeiros:
+    // sem isto, um honorario marcado como PAGO ficaria com paidDate nulo e
+    // nunca entraria na RECEITA REAL (dashboard/revenue-trend).
+    if (status !== undefined) {
+      if (status === 'PAGO') {
+        if (paidDate === undefined && !fee.paidDate) {
+          updateData.paidDate = new Date();
+        }
+      } else if (fee.status === 'PAGO') {
+        // Reabertura: a data de pagamento deixa de valer.
+        updateData.paidDate = null;
+      }
+    }
 
     const updatedFee = await prisma.fee.update({
       where: { id },

@@ -274,7 +274,7 @@ export const enable2FA = async (req: AuthRequest, res: Response, next: NextFunct
 
     // Gerar secret
     const secret = authenticator.generateSecret();
-    const appName = process.env.TWO_FACTOR_APP_NAME || 'CRM Jurídico';
+    const appName = process.env.TWO_FACTOR_APP_NAME || 'Monique Advogados';
     const otpauth = authenticator.keyuri(user.email, appName, secret);
 
     // Gerar QR Code

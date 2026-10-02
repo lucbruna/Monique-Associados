@@ -11,19 +11,16 @@ import {
   XMarkIcon,
   TrashIcon,
   PencilIcon,
-  CheckCircleIcon
 } from '@heroicons/react/24/outline';
 
 interface Appointment {
   id: string;
   title: string;
   description?: string;
-  date: string;
   startTime: string;
   endTime: string;
   location?: string;
-  type: 'AUDIENCIA' | 'REUNIAO' | 'PRAZO' | 'OUTRO';
-  status: 'AGENDADO' | 'CONCLUIDO' | 'CANCELADO';
+  type: string;
   caseId?: string;
   case?: {
     caseNumber: string;
@@ -69,7 +66,7 @@ export default function Calendar() {
 
   // Criar compromisso
   const createMutation = useMutation({
-    mutationFn: async (data: AppointmentForm) => {
+    mutationFn: async (data: Partial<AppointmentForm>) => {
       return await api.post('/appointments', data);
     },
     onSuccess: () => {
@@ -114,22 +111,17 @@ export default function Calendar() {
     }
   });
 
-  // Marcar como concluído
-  const completeMutation = useMutation({
-    mutationFn: async (id: string) => {
-      return await api.put(`/appointments/${id}`, { status: 'CONCLUIDO' });
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['appointments'] });
-      toast.success('Compromisso marcado como concluído!');
-    }
-  });
-
   const onSubmit = (data: AppointmentForm) => {
+    const { date, ...rest } = data;
+    const payload = {
+      ...rest,
+      startTime: new Date(`${date}T${data.startTime}`).toISOString(),
+      endTime: new Date(`${date}T${data.endTime}`).toISOString(),
+    };
     if (selectedAppointment) {
-      updateMutation.mutate({ id: selectedAppointment.id, data });
+      updateMutation.mutate({ id: selectedAppointment.id, data: payload });
     } else {
-      createMutation.mutate(data);
+      createMutation.mutate(payload);
     }
   };
 
@@ -149,9 +141,9 @@ export default function Calendar() {
     reset({
       title: appointment.title,
       description: appointment.description || '',
-      date: appointment.date.split('T')[0],
-      startTime: appointment.startTime,
-      endTime: appointment.endTime,
+      date: appointment.startTime.split('T')[0],
+      startTime: appointment.startTime.split('T')[1]?.slice(0, 5) || '09:00',
+      endTime: appointment.endTime.split('T')[1]?.slice(0, 5) || '10:00',
       location: appointment.location || '',
       type: appointment.type,
       caseId: appointment.caseId || ''
@@ -170,30 +162,46 @@ export default function Calendar() {
     // Implementar OAuth Google Calendar posteriormente
   };
 
-  const getAppointmentsForDate = (date: Date) => {
-    const dateStr = date.toISOString().split('T')[0];
-    return appointments.filter((apt: Appointment) => 
-      apt.date.split('T')[0] === dateStr
+const localDateStr = (iso: string) => {
+    const d = new Date(iso);
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  };
+
+const formatTime = (iso: string) => {
+    const d = new Date(iso);
+    if (Number.isNaN(d.getTime())) return '--:--';
+    return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+  };
+
+const getAppointmentsForDate = (date: Date) => {
+    const dateStr = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+    return appointments.filter((apt: Appointment) =>
+      localDateStr(apt.startTime) === dateStr
     );
   };
 
-  const todayAppointments = getAppointmentsForDate(new Date());
-  const upcomingAppointments = appointments
-    .filter((apt: Appointment) => new Date(apt.date) > new Date() && apt.status !== 'CONCLUIDO')
-    .sort((a: Appointment, b: Appointment) => new Date(a.date).getTime() - new Date(b.date).getTime())
-    .slice(0, 5);
+const todayAppointments = getAppointmentsForDate(new Date());
+
+// "Próximos" começa no início de amanhã: compromissos de hoje já aparecem
+// em "Compromissos de Hoje" e nunca devem ser duplicados aqui.
+const startOfTomorrow = (() => {
+    const d = new Date();
+    d.setHours(0, 0, 0, 0);
+    d.setDate(d.getDate() + 1);
+    return d;
+  })();
+
+const allUpcomingAppointments = appointments
+    .filter((apt: Appointment) => new Date(apt.startTime).getTime() >= startOfTomorrow.getTime())
+    .sort((a: Appointment, b: Appointment) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime());
+
+const upcomingAppointments = allUpcomingAppointments.slice(0, 5);
 
   const typeLabels: Record<string, string> = {
     AUDIENCIA: 'Audiência',
     REUNIAO: 'Reunião',
     PRAZO: 'Prazo',
     OUTRO: 'Outro'
-  };
-
-  const statusColors: Record<string, string> = {
-    AGENDADO: 'bg-blue-100 text-blue-800',
-    CONCLUIDO: 'bg-green-100 text-green-800',
-    CANCELADO: 'bg-red-100 text-red-800'
   };
 
   if (isLoading) {
@@ -209,13 +217,14 @@ export default function Calendar() {
       {/* Header */}
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-3xl font-bold text-dark-900">Agenda</h1>
-          <p className="text-gray-600 mt-1">Gerencie seus compromissos e audiências</p>
+          <h1 className="text-3xl font-bold text-gold dark:text-gold-light">Agenda</h1>
+          <p className="text-slate-600 dark:text-slate-400 mt-1">Gerencie seus compromissos e audiências</p>
+          <span className="gold-rule mt-3" aria-hidden="true"></span>
         </div>
         <div className="flex gap-3">
           <button
             onClick={syncWithGoogle}
-            className="btn bg-white border border-gray-300 text-gray-700 hover:bg-gray-50"
+            className="btn bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800"
           >
             <CalendarIcon className="h-5 w-5 mr-2" />
             Sincronizar com Google
@@ -243,7 +252,7 @@ export default function Calendar() {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-green-100">Próximos</p>
-              <p className="text-3xl font-bold mt-2">{upcomingAppointments.length}</p>
+              <p className="text-3xl font-bold mt-2">{allUpcomingAppointments.length}</p>
             </div>
             <ClockIcon className="h-12 w-12 text-green-200" />
           </div>
@@ -254,8 +263,8 @@ export default function Calendar() {
             <div>
               <p className="text-purple-100">Total do Mês</p>
               <p className="text-3xl font-bold mt-2">
-                {appointments.filter((apt: Appointment) => 
-                  new Date(apt.date).getMonth() === new Date().getMonth()
+                {appointments.filter((apt: Appointment) =>
+                  new Date(apt.startTime).getMonth() === new Date().getMonth()
                 ).length}
               </p>
             </div>
@@ -270,20 +279,20 @@ export default function Calendar() {
           <h2 className="text-xl font-semibold mb-4">Compromissos de Hoje</h2>
           <div className="space-y-3">
             {todayAppointments.map((apt: Appointment) => (
-              <div key={apt.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+              <div key={apt.id} className="flex items-center justify-between p-4 bg-slate-50 dark:bg-slate-950 rounded-lg">
                 <div className="flex items-start gap-4 flex-1">
                   <div className="flex flex-col items-center bg-primary-100 rounded-lg px-3 py-2">
-                    <span className="text-sm font-medium text-primary-600">{apt.startTime}</span>
+                    <span className="text-sm font-medium text-primary-600">{formatTime(apt.startTime)}</span>
                     <span className="text-xs text-primary-500">às</span>
-                    <span className="text-sm font-medium text-primary-600">{apt.endTime}</span>
+                    <span className="text-sm font-medium text-primary-600">{formatTime(apt.endTime)}</span>
                   </div>
                   <div className="flex-1">
-                    <h3 className="font-semibold text-dark-900">{apt.title}</h3>
+                    <h3 className="font-semibold text-slate-900 dark:text-slate-100">{apt.title}</h3>
                     {apt.description && (
-                      <p className="text-sm text-gray-600 mt-1">{apt.description}</p>
+                      <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">{apt.description}</p>
                     )}
                     {apt.location && (
-                      <div className="flex items-center gap-1 mt-2 text-sm text-gray-500">
+                      <div className="flex items-center gap-1 mt-2 text-sm text-slate-500 dark:text-slate-400">
                         <MapPinIcon className="h-4 w-4" />
                         {apt.location}
                       </div>
@@ -297,26 +306,14 @@ export default function Calendar() {
                       <span className="px-2 py-1 text-xs font-medium rounded bg-primary-100 text-primary-800">
                         {typeLabels[apt.type]}
                       </span>
-                      <span className={`px-2 py-1 text-xs font-medium rounded ${statusColors[apt.status]}`}>
-                        {apt.status}
-                      </span>
                     </div>
                   </div>
                 </div>
                 <div className="flex gap-2">
-                  {apt.status === 'AGENDADO' && (
-                    <button
-                      onClick={() => completeMutation.mutate(apt.id)}
-                      title="Marcar como concluído"
-                      className="p-2 text-green-600 hover:bg-green-50 rounded-lg"
-                    >
-                      <CheckCircleIcon className="h-5 w-5" />
-                    </button>
-                  )}
                   <button
                     onClick={() => openEditModal(apt)}
                     title="Editar"
-                    className="p-2 text-gray-600 hover:bg-gray-100 rounded-lg"
+                    className="p-2 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg"
                   >
                     <PencilIcon className="h-5 w-5" />
                   </button>
@@ -339,8 +336,8 @@ export default function Calendar() {
         <h2 className="text-xl font-semibold mb-4">Próximos Compromissos</h2>
         {upcomingAppointments.length === 0 ? (
           <div className="text-center py-12">
-            <CalendarIcon className="h-16 w-16 text-gray-300 mx-auto mb-4" />
-            <p className="text-gray-500">Nenhum compromisso agendado</p>
+            <CalendarIcon className="h-16 w-16 text-slate-300 dark:text-slate-400 mx-auto mb-4" />
+            <p className="text-slate-500 dark:text-slate-400">Nenhum compromisso agendado</p>
             <button onClick={openCreateModal} className="btn btn-primary mt-4">
               Agendar Compromisso
             </button>
@@ -348,26 +345,26 @@ export default function Calendar() {
         ) : (
           <div className="space-y-3">
             {upcomingAppointments.map((apt: Appointment) => (
-              <div key={apt.id} className="flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:border-primary-300 transition">
+              <div key={apt.id} className="flex items-center justify-between p-4 border border-slate-200 dark:border-slate-700 rounded-lg hover:border-primary-300 transition">
                 <div className="flex items-start gap-4 flex-1">
-                  <div className="flex flex-col items-center bg-gray-100 rounded-lg px-3 py-2 min-w-[80px]">
-                    <span className="text-lg font-bold text-dark-900">
-                      {new Date(apt.date).getDate()}
+                  <div className="flex flex-col items-center bg-slate-100 dark:bg-slate-950 rounded-lg px-3 py-2 min-w-[80px]">
+                    <span className="text-lg font-bold text-slate-900 dark:text-slate-100">
+                      {new Date(apt.startTime).getDate()}
                     </span>
-                    <span className="text-xs text-gray-600">
-                      {new Date(apt.date).toLocaleDateString('pt-BR', { month: 'short' })}
+                    <span className="text-xs text-slate-600 dark:text-slate-400">
+                      {new Date(apt.startTime).toLocaleDateString('pt-BR', { month: 'short' })}
                     </span>
                     <span className="text-xs font-medium text-primary-600 mt-1">
-                      {apt.startTime}
+                      {formatTime(apt.startTime)}
                     </span>
                   </div>
                   <div className="flex-1">
-                    <h3 className="font-semibold text-dark-900">{apt.title}</h3>
+                    <h3 className="font-semibold text-slate-900 dark:text-slate-100">{apt.title}</h3>
                     {apt.description && (
-                      <p className="text-sm text-gray-600 mt-1">{apt.description}</p>
+                      <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">{apt.description}</p>
                     )}
                     {apt.location && (
-                      <div className="flex items-center gap-1 mt-2 text-sm text-gray-500">
+                      <div className="flex items-center gap-1 mt-2 text-sm text-slate-500 dark:text-slate-400">
                         <MapPinIcon className="h-4 w-4" />
                         {apt.location}
                       </div>
@@ -386,7 +383,7 @@ export default function Calendar() {
                   <button
                     onClick={() => openEditModal(apt)}
                     title="Editar"
-                    className="p-2 text-gray-600 hover:bg-gray-100 rounded-lg"
+                    className="p-2 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg"
                   >
                     <PencilIcon className="h-5 w-5" />
                   </button>
@@ -407,10 +404,10 @@ export default function Calendar() {
       {/* Modal de Criação/Edição */}
       {isModalOpen && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+          <div className="bg-white dark:bg-slate-900 rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
             <div className="p-6">
               <div className="flex justify-between items-center mb-6">
-                <h2 className="text-2xl font-bold text-dark-900">
+                <h2 className="text-2xl font-bold text-slate-900 dark:text-slate-100">
                   {selectedAppointment ? 'Editar Compromisso' : 'Novo Compromisso'}
                 </h2>
                 <button
@@ -421,7 +418,7 @@ export default function Calendar() {
                   }}
                   title="Fechar"
                   aria-label="Fechar modal"
-                  className="text-gray-500 hover:text-gray-700"
+                  className="text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200"
                 >
                   <XMarkIcon className="h-6 w-6" />
                 </button>
@@ -429,7 +426,7 @@ export default function Calendar() {
 
               <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
                 <div>
-                  <label htmlFor="apt-title" className="block text-sm font-medium text-gray-700 mb-1">
+                  <label htmlFor="apt-title" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
                     Título *
                   </label>
                   <input
@@ -444,7 +441,7 @@ export default function Calendar() {
                 </div>
 
                 <div>
-                  <label htmlFor="apt-description" className="block text-sm font-medium text-gray-700 mb-1">
+                  <label htmlFor="apt-description" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
                     Descrição
                   </label>
                   <textarea
@@ -458,7 +455,7 @@ export default function Calendar() {
 
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label htmlFor="apt-type" className="block text-sm font-medium text-gray-700 mb-1">
+                    <label htmlFor="apt-type" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
                       Tipo *
                     </label>
                     <select
@@ -474,7 +471,7 @@ export default function Calendar() {
                   </div>
 
                   <div>
-                    <label htmlFor="apt-date" className="block text-sm font-medium text-gray-700 mb-1">
+                    <label htmlFor="apt-date" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
                       Data *
                     </label>
                     <input
@@ -491,7 +488,7 @@ export default function Calendar() {
 
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label htmlFor="apt-start" className="block text-sm font-medium text-gray-700 mb-1">
+                    <label htmlFor="apt-start" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
                       Hora Início *
                     </label>
                     <input
@@ -506,7 +503,7 @@ export default function Calendar() {
                   </div>
 
                   <div>
-                    <label htmlFor="apt-end" className="block text-sm font-medium text-gray-700 mb-1">
+                    <label htmlFor="apt-end" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
                       Hora Fim *
                     </label>
                     <input
@@ -522,7 +519,7 @@ export default function Calendar() {
                 </div>
 
                 <div>
-                  <label htmlFor="apt-location" className="block text-sm font-medium text-gray-700 mb-1">
+                  <label htmlFor="apt-location" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
                     Local
                   </label>
                   <input
@@ -534,7 +531,7 @@ export default function Calendar() {
                 </div>
 
                 <div>
-                  <label htmlFor="apt-case" className="block text-sm font-medium text-gray-700 mb-1">
+                  <label htmlFor="apt-case" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
                     Vincular a Processo (opcional)
                   </label>
                   <select
@@ -559,7 +556,7 @@ export default function Calendar() {
                       setSelectedAppointment(null);
                       reset();
                     }}
-                    className="btn bg-gray-200 text-gray-700 hover:bg-gray-300 flex-1"
+                    className="btn bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-300 flex-1"
                   >
                     Cancelar
                   </button>

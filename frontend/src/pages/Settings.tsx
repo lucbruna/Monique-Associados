@@ -33,15 +33,23 @@ export default function Settings() {
   const { register: registerPassword, handleSubmit: handleSubmitPassword, formState: { errors: errorsPassword }, reset } = useForm<PasswordForm>();
 
   const onSubmitProfile = async (data: ProfileForm) => {
+    if (!user?.id) {
+      toast.error('Sessão expirada. Faça login novamente.');
+      return;
+    }
     try {
       setLoading(true);
-      const response = await api.put(`/users/${user?.id}`, data);
+      const response = await api.put(`/users/${user.id}`, data);
       
       const updatedUser = response.data.data;
       updateUser(updatedUser);
       toast.success('Perfil atualizado com sucesso!');
     } catch (error: any) {
-      toast.error(error.response?.data?.message || 'Erro ao atualizar perfil');
+      if (error.response?.status === 404) {
+        toast.error('Usuário não encontrado. Faça login novamente.');
+      } else {
+        toast.error(error.response?.data?.message || 'Erro ao atualizar perfil');
+      }
     } finally {
       setLoading(false);
     }
@@ -52,10 +60,14 @@ export default function Settings() {
       toast.error('As senhas não coincidem');
       return;
     }
+    if (!user?.id) {
+      toast.error('Sessão expirada. Faça login novamente.');
+      return;
+    }
 
     try {
       setLoading(true);
-      await api.put(`/users/${user?.id}`, { password: data.newPassword });
+      await api.put(`/users/${user.id}`, { password: data.newPassword });
       toast.success('Senha alterada com sucesso!');
       reset();
     } catch (error: any) {
@@ -73,21 +85,17 @@ export default function Settings() {
 
   return (
     <div className="max-w-7xl mx-auto">
-      <h1 className="text-3xl font-bold text-gray-900 mb-6">Configurações</h1>
+      <h1 className="text-3xl font-bold text-gold dark:text-gold-light mb-6">Configurações</h1>
 
-      <div className="border-b border-gray-200 mb-6">
+      <div className="border-b border-slate-200 dark:border-slate-700 mb-6">
         <nav className="-mb-px flex space-x-8">
           {tabs.map((tab) => (
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
-              className={`group inline-flex items-center py-4 px-1 border-b-2 font-medium text-sm ${
-                activeTab === tab.id
-                  ? 'border-primary-500 text-primary-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-              }`}
+              className={`group inline-flex items-center py-4 px-1 border-b-2 font-medium text-sm ${ activeTab === tab.id ? 'border-primary-500 text-primary-600' : 'border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:border-slate-300' }`}
             >
-              <tab.icon className={`-ml-0.5 mr-2 h-5 w-5 ${activeTab === tab.id ? 'text-primary-500' : 'text-gray-400'}`} />
+              <tab.icon className={`-ml-0.5 mr-2 h-5 w-5 ${activeTab === tab.id ? 'text-primary-500 dark:text-primary-300' : 'text-slate-400 dark:text-slate-500'}`} />
               {tab.name}
             </button>
           ))}
@@ -99,16 +107,16 @@ export default function Settings() {
           <h2 className="text-xl font-semibold mb-6">Informações do Perfil</h2>
           
           {/* Foto de Perfil */}
-          <div className="mb-8 pb-8 border-b border-gray-200">
+          <div className="mb-8 pb-8 border-b border-slate-200 dark:border-slate-700">
             <h3 className="text-lg font-medium mb-4">Foto de Perfil</h3>
             <div className="flex items-center gap-6">
               <div className="relative">
                 {user?.profileImage ? (
                   <img
                     key={imageKey}
-                    src={`http://localhost:3001${user.profileImage}?v=${imageKey}`}
+                    src={`${user.profileImage}?v=${imageKey}`}
                     alt="Foto de perfil"
-                    className="w-24 h-24 rounded-full object-cover border-2 border-gray-200"
+                    className="w-24 h-24 rounded-full object-cover border-2 border-slate-200 dark:border-slate-700"
                     onError={(e) => {
                       const target = e.target as HTMLImageElement;
                       target.onerror = null; // Previne loop infinito
@@ -118,7 +126,7 @@ export default function Settings() {
                     }}
                   />
                 ) : (
-                  <div className="w-24 h-24 rounded-full bg-primary-100 flex items-center justify-center border-2 border-gray-200">
+                  <div className="w-24 h-24 rounded-full bg-primary-100 flex items-center justify-center border-2 border-slate-200 dark:border-slate-700">
                     <UserCircleIcon className="w-16 h-16 text-primary-600" />
                   </div>
                 )}
@@ -145,14 +153,20 @@ export default function Settings() {
                       return;
                     }
 
+                    if (!user?.id) {
+                      toast.error('Sessão expirada. Faça login novamente.');
+                      return;
+                    }
+
                     const formData = new FormData();
                     formData.append('profileImage', file);
 
                     try {
                       setLoading(true);
-                      console.log('Enviando foto para:', `/users/${user?.id}/profile-image`);
+                      console.log('Enviando foto para:', `/users/${user.id}/profile-image`);
+                      console.log('User ID:', user.id);
                       
-                      const response = await api.post(`/users/${user?.id}/profile-image`, formData, {
+                      const response = await api.post(`/users/${user.id}/profile-image`, formData, {
                         headers: {
                           'Content-Type': 'multipart/form-data',
                         },
@@ -183,7 +197,7 @@ export default function Settings() {
                 >
                   {loading ? 'Enviando...' : 'Alterar Foto'}
                 </label>
-                <p className="text-sm text-gray-500 mt-2">
+                <p className="text-sm text-slate-500 dark:text-slate-400 mt-2">
                   Formatos aceitos: JPG, PNG, GIF. Máximo 5MB.
                 </p>
               </div>
@@ -193,21 +207,21 @@ export default function Settings() {
           <form onSubmit={handleSubmitProfile(onSubmitProfile)} className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Nome Completo *</label>
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Nome Completo *</label>
                 <input {...registerProfile('name', { required: 'Nome é obrigatório' })} type="text" className="input-field" />
                 {errorsProfile.name && <p className="mt-1 text-sm text-red-600">{errorsProfile.name.message}</p>}
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Email *</label>
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Email *</label>
                 <input {...registerProfile('email', { required: 'Email é obrigatório' })} type="email" className="input-field" />
                 {errorsProfile.email && <p className="mt-1 text-sm text-red-600">{errorsProfile.email.message}</p>}
               </div>
               <div>
-                <label htmlFor="profile-phone" className="block text-sm font-medium text-gray-700 mb-2">Telefone</label>
+                <label htmlFor="profile-phone" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Telefone</label>
                 <input {...registerProfile('phone')} id="profile-phone" type="text" className="input-field" placeholder="(11) 98765-4321" />
               </div>
               <div>
-                <label htmlFor="profile-role" className="block text-sm font-medium text-gray-700 mb-2">Função</label>
+                <label htmlFor="profile-role" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Função</label>
                 <input 
                   id="profile-role"
                   type="text" 
@@ -215,7 +229,7 @@ export default function Settings() {
                   disabled 
                   title="Função do usuário"
                   aria-label="Função do usuário (não editável)"
-                  className="input-field bg-gray-100" 
+                  className="input-field bg-slate-100 dark:bg-slate-950" 
                 />
               </div>
             </div>
@@ -233,15 +247,15 @@ export default function Settings() {
           <h2 className="text-xl font-semibold mb-6">Alterar Senha</h2>
           <form onSubmit={handleSubmitPassword(onSubmitPassword)} className="space-y-6 max-w-md">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Senha Atual *</label>
+              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Senha Atual *</label>
               <input {...registerPassword('currentPassword', { required: true })} type="password" className="input-field" />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Nova Senha *</label>
+              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Nova Senha *</label>
               <input {...registerPassword('newPassword', { required: true, minLength: 6 })} type="password" className="input-field" />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Confirmar Nova Senha *</label>
+              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Confirmar Nova Senha *</label>
               <input {...registerPassword('confirmPassword', { required: true })} type="password" className="input-field" />
               {errorsPassword.confirmPassword && <p className="mt-1 text-sm text-red-600">As senhas não coincidem</p>}
             </div>
@@ -261,8 +275,8 @@ export default function Settings() {
             {['Notificações de Email', 'Alertas de Prazos', 'Notificações de Audiências', 'Novos Documentos'].map((item, index) => (
               <div key={item} className="flex items-center justify-between">
                 <div>
-                  <h3 className="font-medium text-gray-900">{item}</h3>
-                  <p className="text-sm text-gray-500">Receba notificações sobre {item.toLowerCase()}</p>
+                  <h3 className="font-medium text-slate-900 dark:text-slate-100">{item}</h3>
+                  <p className="text-sm text-slate-500 dark:text-slate-400">Receba notificações sobre {item.toLowerCase()}</p>
                 </div>
                 <label htmlFor={`notification-${index}`} className="relative inline-flex items-center cursor-pointer">
                   <input 
@@ -273,7 +287,7 @@ export default function Settings() {
                     aria-label={`Ativar ou desativar ${item}`}
                     className="sr-only peer" 
                   />
-                  <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary-300 rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary-600"></div>
+                  <div className="w-11 h-6 bg-slate-200 dark:bg-slate-800 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary-300 rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary-600"></div>
                 </label>
               </div>
             ))}

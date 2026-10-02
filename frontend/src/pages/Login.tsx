@@ -15,7 +15,7 @@ export default function Login() {
   const [require2FA, setRequire2FA] = useState(false);
   const [loading, setLoading] = useState(false);
   const { register, handleSubmit, formState: { errors } } = useForm<LoginForm>();
-  const { setAuth } = useAuthStore();
+  const { setAuth, setPermissions } = useAuthStore();
   const navigate = useNavigate();
 
   const onSubmit = async (data: LoginForm) => {
@@ -31,6 +31,15 @@ export default function Login() {
 
       const { user, accessToken, refreshToken } = response.data.data;
       setAuth(user, accessToken, refreshToken);
+
+      // Buscar permissões do usuário
+      try {
+        const permResponse = await api.get('/users/me/permissions');
+        setPermissions(permResponse.data.data.permissions);
+      } catch (e) {
+        console.error('Erro ao buscar permissões:', e);
+      }
+
       toast.success('Login realizado com sucesso!');
       navigate('/dashboard');
     } catch (error: any) {
@@ -41,18 +50,27 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-dark-900 via-dark-800 to-dark-900 py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-md w-full space-y-8">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#0b0f17] via-[#121826] to-[#0b0f17] py-12 px-4 sm:px-6 lg:px-8 relative overflow-hidden">
+      {/* Brilho dourado sutil de fundo */}
+      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_top,rgba(212,175,55,0.14),transparent_55%)]" aria-hidden="true" />
+      <div className="pointer-events-none absolute -top-32 -right-32 h-96 w-96 rounded-full bg-gold-500/10 blur-3xl" aria-hidden="true" />
+      <div className="pointer-events-none absolute -bottom-32 -left-32 h-96 w-96 rounded-full bg-primary-600/10 blur-3xl" aria-hidden="true" />
+
+      <div className="max-w-md w-full space-y-8 relative">
         <div className="text-center">
-          <h1 className="text-4xl font-bold text-primary-400 mb-2">CRM Jurídico</h1>
-          <h2 className="text-2xl font-semibold text-white">Sistema de Gestão Advocatícia</h2>
-          <p className="mt-2 text-gray-400">Entre com suas credenciais</p>
+          <div className="mx-auto mb-5 h-16 w-16 rounded-2xl bg-gradient-to-br from-gold-300 via-gold-400 to-gold-600 grid place-items-center text-3xl shadow-glow-gold ring-1 ring-gold-300/40">
+            ⚖️
+          </div>
+          <h1 className="text-5xl font-bold text-gold-light mb-3 tracking-[0.02em]">Monique Advogados</h1>
+          <span className="mx-auto gold-rule" aria-hidden="true"></span>
+          <h2 className="text-lg font-medium text-slate-300 mt-4 tracking-wide">Sistema de Gestão Jurídica</h2>
+          <p className="mt-2 text-slate-500 text-sm">Entre com suas credenciais</p>
         </div>
 
-        <form className="mt-8 space-y-6 bg-white p-8 rounded-xl shadow-2xl" onSubmit={handleSubmit(onSubmit)}>
+        <form className="mt-8 space-y-6 bg-white/95 backdrop-blur p-8 rounded-3xl shadow-2xl border border-white/20 ring-1 ring-gold-400/30" onSubmit={handleSubmit(onSubmit)}>
           <div className="space-y-4">
             <div>
-              <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
+              <label htmlFor="email" className="block text-sm font-medium text-slate-700 mb-1">
                 Email
               </label>
               <input
@@ -65,7 +83,7 @@ export default function Login() {
             </div>
 
             <div>
-              <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
+              <label htmlFor="password" className="block text-sm font-medium text-slate-700 mb-1">
                 Senha
               </label>
               <input
@@ -79,7 +97,7 @@ export default function Login() {
 
             {require2FA && (
               <div>
-                <label htmlFor="twoFactorCode" className="block text-sm font-medium text-gray-700 mb-1">
+                <label htmlFor="twoFactorCode" className="block text-sm font-medium text-slate-700 mb-1">
                   Código 2FA
                 </label>
                 <input
@@ -103,8 +121,8 @@ export default function Login() {
           </button>
         </form>
 
-        <p className="text-center text-gray-400 text-sm">
-          &copy; 2024 CRM Jurídico. Todos os direitos reservados.
+        <p className="text-center text-slate-400 text-sm">
+          &copy; 2026 ⚖️ Monique Advogados. Todos os direitos reservados.
         </p>
       </div>
     </div>

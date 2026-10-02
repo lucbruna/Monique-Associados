@@ -82,15 +82,14 @@ export const updateUser = async (req: AuthRequest, res: Response, next: NextFunc
       }
     }
 
-    const updateData: any = {
-      name,
-      email,
-      cpf,
-      oab,
-      phone,
-      role,
-      isActive,
-    };
+    const updateData: any = {};
+    if (name !== undefined) updateData.name = name;
+    if (email !== undefined) updateData.email = email;
+    if (cpf !== undefined) updateData.cpf = cpf;
+    if (oab !== undefined) updateData.oab = oab;
+    if (phone !== undefined) updateData.phone = phone;
+    if (role !== undefined) updateData.role = role;
+    if (isActive !== undefined) updateData.isActive = isActive;
 
     if (password) {
       updateData.password = await bcrypt.hash(password, 12);
@@ -109,6 +108,7 @@ export const updateUser = async (req: AuthRequest, res: Response, next: NextFunc
         role: true,
         isActive: true,
         profileImage: true,
+        twoFactorEnabled: true,
         createdAt: true,
         updatedAt: true,
       },
@@ -202,6 +202,7 @@ export const uploadProfileImage = async (req: AuthRequest, res: Response, next: 
         role: true,
         isActive: true,
         profileImage: true,
+        twoFactorEnabled: true,
         createdAt: true,
         updatedAt: true,
       },
@@ -212,9 +213,9 @@ export const uploadProfileImage = async (req: AuthRequest, res: Response, next: 
       'User',
       user.id,
       req.user?.id || user.id,
-      `Foto de perfil atualizada para ${user.name}`,
-      undefined,
-      undefined
+      req.ip,
+      req.get('user-agent'),
+      `Foto de perfil atualizada para ${user.name}`
     );
 
     res.json({ 
