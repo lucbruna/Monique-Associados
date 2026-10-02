@@ -40,3 +40,10 @@ yarn-error.log*
 instru*.txt
 *senha*
 *.out
+
+# Fonte do Vade Mecum (7,9 MB): o texto já está extraído em
+# frontend/public/vademecum/. Guardar o PDF inflaria o repositório sem uso.
+Vade_mecum_*.pdf
+
+# Backups de binários compilados
+*.exe.old
